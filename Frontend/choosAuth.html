@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Choix de l'authentification - Sécurité</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>Choisissez votre méthode d’authentification</h2>
+
+    <form action="/select-auth-method" method="POST">
+        
+        <div class="auth-options">
+
+            <label class="auth-card">
+                <input type="radio" name="auth_method" value="microsoft" required>
+                <div>
+                    <div class="auth-title">Microsoft Authenticator</div>
+                    <div class="auth-desc">Application mobile sécurisée avec génération de code OTP.</div>
+                </div>
+            </label>
+
+            <label class="auth-card">
+                <input type="radio" name="auth_method" value="google">
+                <div>
+                    <div class="auth-title">Google Authenticator</div>
+                    <div class="auth-desc">Génération locale de codes temporaires (TOTP).</div>
+                </div>
+            </label>
+
+            <label class="auth-card">
+                <input type="radio" name="auth_method" value="authy">
+                <div>
+                    <div class="auth-title">Authy (version cloud)</div>
+                    <div class="auth-desc">Synchronisation cloud multi-appareils.</div>
+                </div>
+            </label>
+
+            <label class="auth-card">
+                <input type="radio" name="auth_method" value="freeotp">
+                <div>
+                    <div class="auth-title">FreeOTP (open-source)</div>
+                    <div class="auth-desc">Solution open-source basée sur TOTP/HOTP.</div>
+                </div>
+            </label>
+
+            <label class="auth-card">
+                <input type="radio" name="auth_method" value="yubikey">
+                <div>
+                    <div class="auth-title">Clé YubiKey</div>
+                    <div class="auth-desc">Clé matérielle physique (U2F / FIDO2).</div>
+                </div>
+            </label>
+
+            <label class="auth-card">
+                <input type="radio" name="auth_method" value="email">
+                <div>
+                    <div class="auth-title">Notification par email</div>
+                    <div class="auth-desc">Réception d’un code de vérification par courrier électronique.</div>
+                </div>
+            </label>
+
+        </div>
+
+        <div class="submit-container">
+            <button type="submit" class="btn">Continuer</button>
+        </div>
+
+    </form>
+</div>
+
+</body>
+</html>
