@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription - Authentification Forte</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Lien vers le fichier CSS externe -->
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>Créer un compte</h2>
+
+    <form action="/register" method="POST">
+        
+        <div class="input-group">
+            <label for="fullname">Nom complet</label>
+            <input type="text" id="fullname" name="fullname" required>
+        </div>
+
+        <div class="input-group">
+            <label for="email">Adresse email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="input-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+
+        <div class="input-group">
+            <label for="confirm">Confirmer le mot de passe</label>
+            <input type="password" id="confirm" name="confirm" required>
+        </div>
+
+        <button type="submit" class="btn">S'inscrire</button>
+    </form>
+
+    <div class="footer">
+        Déjà un compte ? <a href="login.html">Se connecter</a>
+    </div>
+</div>
+
+</body>
+</html>
