@@ -2,6 +2,20 @@ from flask import Flask, request, render_template, flash, redirect, url_for, ses
 import pymysql
 import os
 import bcrypt
+try:
+    from microsoft_authenticator import (
+        build_otpauth_uri,
+        build_qr_code_url,
+        generate_totp_secret,
+        verify_totp,
+    )
+except ImportError:
+    from Backend.microsoft_authenticator import (
+        build_otpauth_uri,
+        build_qr_code_url,
+        generate_totp_secret,
+        verify_totp,
+    )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
@@ -155,8 +169,56 @@ def select_auth_method():
         flash("Veuillez choisir une methode d'authentification.", "error")
         return redirect(url_for("choose_auth"))
 
-    flash(f"Methode selectionnee: {selected_method}", "success")
+    session["selected_auth_method"] = selected_method
+
+    if selected_method == "microsoft":
+        return redirect(url_for("microsoft_auth_setup"))
+
+    flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
+
+
+@app.route("/microsoft-auth/setup", methods=["GET", "POST"])
+def microsoft_auth_setup():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    secret = session.get("microsoft_totp_secret")
+    if not secret:
+        secret = generate_totp_secret()
+        session["microsoft_totp_secret"] = secret
+        session["microsoft_auth_verified"] = False
+
+    account_name = session.get("user_name", "utilisateur")
+    issuer = "AuthentificationForte"
+    otpauth_uri = build_otpauth_uri(secret=secret, account_name=account_name, issuer=issuer)
+    qr_url = build_qr_code_url(otpauth_uri)
+
+    if request.method == "POST":
+        otp_code = request.form.get("otp_code", "").strip()
+        if verify_totp(secret=secret, user_code=otp_code):
+            session["microsoft_auth_verified"] = True
+            flash("Microsoft Authenticator configure avec succes.", "success")
+            return redirect(url_for("microsoft_auth_report"))
+        flash("Code invalide. Verifiez l'application puis reessayez.", "error")
+
+    return render_template(
+        "microsoft_auth_setup.html",
+        qr_url=qr_url,
+        secret=secret,
+        issuer=issuer,
+        account_name=account_name,
+    )
+
+
+@app.route("/microsoft-auth/report")
+def microsoft_auth_report():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    if not session.get("microsoft_auth_verified"):
+        flash("Veuillez finaliser la verification Microsoft Authenticator.", "error")
+        return redirect(url_for("microsoft_auth_setup"))
+    return render_template("microsoft_auth_report.html")
 
 
 if __name__ == "__main__":

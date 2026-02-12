@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Microsoft Authenticator: analyse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="microsoft-auth-report-page">
+    <main class="mar-wrapper">
+        <header class="mar-header">
+            <h1>Microsoft Authenticator active</h1>
+            <p>Voici une synthese utile pour une entreprise: benefices, limites et couts.</p>
+        </header>
+
+        <section class="mar-grid">
+            <article class="mar-card">
+                <h2>Avantages</h2>
+                <ul>
+                    <li>Renforce fortement la securite des comptes avec la 2FA.</li>
+                    <li>Application gratuite et facile a deployer pour les equipes.</li>
+                    <li>Compatible avec OTP et approbation push.</li>
+                    <li>Reduction du risque de compromission par mot de passe vole.</li>
+                </ul>
+            </article>
+
+            <article class="mar-card">
+                <h2>Limites</h2>
+                <ul>
+                    <li>Dependance au smartphone de l'utilisateur.</li>
+                    <li>Support necessaire en cas de perte/changement de telephone.</li>
+                    <li>Les codes OTP peuvent etre victimes de phishing avance.</li>
+                    <li>Experience utilisateur plus lente qu'une connexion simple.</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="mar-card">
+            <h2>Cout pour une entreprise</h2>
+            <div class="mar-table-wrap">
+                <table class="mar-table">
+                    <thead>
+                        <tr>
+                            <th>Poste</th>
+                            <th>Estimation</th>
+                            <th>Commentaire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Licence application</td>
+                            <td>0 EUR / utilisateur</td>
+                            <td>Microsoft Authenticator est gratuit.</td>
+                        </tr>
+                        <tr>
+                            <td>Mise en place IT</td>
+                            <td>1 a 3 jours</td>
+                            <td>Configuration des politiques MFA et tests.</td>
+                        </tr>
+                        <tr>
+                            <td>Support utilisateur</td>
+                            <td>Variable</td>
+                            <td>Principal cout operationnel (onboarding, recuperation).</td>
+                        </tr>
+                        <tr>
+                            <td>Formation interne</td>
+                            <td>Faible a modere</td>
+                            <td>Guide court + communication securite.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="mar-actions">
+            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux methodes</a>
+            <a class="mar-link" href="{{ url_for('logout') }}">Se deconnecter</a>
+        </div>
+    </main>
+</body>
+</html>
