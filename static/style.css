@@ -1,0 +1,321 @@
+/* Style for the registration form */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+}
+
+.container {
+    background: #ffffff;
+    padding: 40px;
+    width: 400px;
+    border-radius: 12px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+
+.container h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #1e3c72;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    transition: 0.3s;
+    font-size: 14px;
+}
+
+.input-group input:focus {
+    border-color: #2a5298;
+    outline: none;
+    box-shadow: 0 0 6px rgba(42, 82, 152, 0.4);
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    background: #2a5298;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 15px;
+}
+
+.btn:hover {
+    background: #1e3c72;
+}
+
+.footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.footer a {
+    color: #2a5298;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .container {
+        width: 90%;
+        padding: 25px;
+    }
+}
+
+/* Style for the choosAuth form */
+.auth-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .auth-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            background-color: #f9f9f9;
+        }
+
+        .auth-card:hover {
+            background-color: #eef3ff;
+            border-color: #2a5298;
+        }
+
+        .auth-card input {
+            margin-right: 10px;
+        }
+
+        .auth-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .auth-desc {
+            font-size: 13px;
+            color: #555;
+            margin-top: 4px;
+        }
+
+        .submit-container {
+            margin-top: 25px;
+        }
+
+/* Flash messages */
+.messages {
+    margin-bottom: 12px;
+}
+.flash {
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+.flash.success {
+    background: #e6ffed;
+    color: #0b7a3d;
+    border: 1px solid #baf2c9;
+}
+.flash.error {
+    background: #ffecec;
+    color: #b30000;
+    border: 1px solid #ffb3b3;
+}
+/* chooseAuth page */
+body.choose-auth-page {
+    --primary: #245bdb;
+    --primary-light: #eff4ff;
+    --text-main: #1a1f36;
+    --text-muted: #4f5b76;
+    --border-color: #e3e8ee;
+    --bg-body: #f7fafc;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+body.choose-auth-page .auth-page {
+    width: 100%;
+    max-width: 900px;
+    margin: 20px;
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+body.choose-auth-page .auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+body.choose-auth-page .auth-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.02em;
+}
+
+body.choose-auth-page .auth-header p {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+body.choose-auth-page .auth-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+body.choose-auth-page .auth-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.choose-auth-page .auth-card:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+body.choose-auth-page .auth-card:has(input[type="radio"]:checked) {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 0 0 4px rgba(36, 91, 219, 0.1);
+}
+
+body.choose-auth-page .auth-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+body.choose-auth-page .icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: #f1f3f9;
+    border-radius: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+body.choose-auth-page .auth-card:hover .icon-box,
+body.choose-auth-page .auth-card:has(input[type="radio"]:checked) .icon-box {
+    background: var(--primary);
+    color: white;
+}
+
+body.choose-auth-page .auth-content {
+    flex-grow: 1;
+}
+
+body.choose-auth-page .auth-title {
+    display: block;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+}
+
+body.choose-auth-page .auth-desc {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+body.choose-auth-page .check-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    opacity: 0;
+    color: var(--primary);
+    transition: opacity 0.2s;
+}
+
+body.choose-auth-page .auth-card:has(input[type="radio"]:checked) .check-badge {
+    opacity: 1;
+}
+
+body.choose-auth-page .submit-container {
+    text-align: center;
+}
+
+body.choose-auth-page .btn-submit {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+    max-width: 300px;
+}
+
+body.choose-auth-page .btn-submit:hover {
+    background-color: #1a44ab;
+}
+
+@media (max-width: 600px) {
+    body.choose-auth-page .auth-page {
+        padding: 24px 16px;
+        margin: 10px;
+        border-radius: 0;
+    }
+
+    body.choose-auth-page .auth-options {
+        grid-template-columns: 1fr;
+    }
+}
