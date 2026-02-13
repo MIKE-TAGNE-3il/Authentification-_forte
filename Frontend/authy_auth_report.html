@@ -2,14 +2,14 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Microsoft Authenticator : analyse</title>
+    <title>Authy : analyse</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-report-page">
     <main class="mar-wrapper">
         <header class="mar-header">
-            <h1>Microsoft Authenticator activé</h1>
+            <h1>Authy activé</h1>
             <p>Voici une synthèse utile pour une entreprise : bénéfices, limites et coûts.</p>
         </header>
 
@@ -17,20 +17,20 @@
             <article class="mar-card">
                 <h2>Avantages</h2>
                 <ul>
-                    <li>Renforce fortement la sécurité des comptes avec la 2FA.</li>
-                    <li>Application gratuite et facile à déployer pour les équipes.</li>
-                    <li>Compatible avec OTP et approbation push.</li>
-                    <li>Réduction du risque de compromission par mot de passe volé.</li>
+                    <li>Renforce la sécurité des comptes avec des codes TOTP temporaires.</li>
+                    <li>Application simple à utiliser pour les équipes non techniques.</li>
+                    <li>Support multi-appareils selon la configuration utilisateur.</li>
+                    <li>Réduction du risque lié au vol de mot de passe.</li>
                 </ul>
             </article>
 
             <article class="mar-card">
                 <h2>Limites</h2>
                 <ul>
-                    <li>Dépendance au smartphone de l'utilisateur.</li>
-                    <li>Support nécessaire en cas de perte ou de changement de téléphone.</li>
-                    <li>Les codes OTP peuvent être victimes de phishing avancé.</li>
-                    <li>Expérience utilisateur plus lente qu'une connexion simple.</li>
+                    <li>Dépendance au smartphone et à la disponibilité de l'application.</li>
+                    <li>Risque de blocage en cas de perte d'appareil sans procédure de secours.</li>
+                    <li>Les codes OTP restent exposés au phishing en temps réel.</li>
+                    <li>Une étape de connexion supplémentaire peut ralentir l'expérience utilisateur.</li>
                 </ul>
             </article>
         </section>
@@ -48,24 +48,24 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Licence de l'application</td>
-                            <td>0 EUR / utilisateur</td>
-                            <td>Microsoft Authenticator est gratuit.</td>
+                            <td>Licence application</td>
+                            <td>Faible à modéré</td>
+                            <td>Selon le mode de déploiement et les besoins de l'entreprise.</td>
                         </tr>
                         <tr>
-                            <td>Mise en place informatique</td>
-                            <td>1 à 3 jours</td>
-                            <td>Configuration des politiques MFA et tests.</td>
+                            <td>Intégration technique</td>
+                            <td>1 à 4 jours</td>
+                            <td>Configuration backend, tests OTP et écrans d'enrôlement.</td>
                         </tr>
                         <tr>
                             <td>Support utilisateur</td>
                             <td>Variable</td>
-                            <td>Principal coût opérationnel (onboarding, récupération).</td>
+                            <td>Onboarding, changement d'appareil et récupération de compte.</td>
                         </tr>
                         <tr>
                             <td>Formation interne</td>
-                            <td>Faible à modéré</td>
-                            <td>Guide court et communication sécurité.</td>
+                            <td>Faible</td>
+                            <td>Guide d'activation et bonnes pratiques anti-phishing.</td>
                         </tr>
                     </tbody>
                 </table>

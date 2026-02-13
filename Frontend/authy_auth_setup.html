@@ -2,14 +2,14 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Configuration Microsoft Authenticator</title>
+    <title>Configuration Authy</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-page">
     <div class="msa-wrapper">
         <div class="msa-header">
-            <h1>Configurer Microsoft Authenticator</h1>
+            <h1>Configurer Authy</h1>
             <p>Suivez les étapes ci-dessous pour activer la double authentification.</p>
         </div>
 
@@ -26,16 +26,16 @@
         <div class="msa-grid">
             <section class="msa-card">
                 <h2>1. Scanner le QR code</h2>
-                <p>Ouvrez Microsoft Authenticator, appuyez sur <strong>Ajouter un compte</strong>, puis scannez ce QR code.</p>
+                <p>Ouvrez Authy, ajoutez un compte TOTP, puis scannez ce QR code.</p>
                 <div class="msa-qr-box">
-                    <img src="{{ qr_url }}" alt="QR code Microsoft Authenticator" class="msa-qr">
+                    <img src="{{ qr_url }}" alt="QR code Authy" class="msa-qr">
                 </div>
             </section>
         </div>
 
         <section class="msa-card">
             <h2>2. Vérifier le code OTP</h2>
-            <p>Entrez le code à 6 chiffres affiché dans Microsoft Authenticator.</p>
+            <p>Entrez le code à 6 chiffres affiché dans Authy.</p>
             <form method="POST" class="msa-form">
                 <input
                     type="text"
