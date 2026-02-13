@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <title>Inscription - Authentification Forte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- CSS corrigÃ© - style.css est Ã  la racine -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
 <div class="container">
-    <h2>CrÃ©er un compte</h2>
+    <h2>Créer un compte</h2>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -23,16 +21,14 @@
             {% endif %}
         {% endwith %}
 
-    <!-- Action corrigÃ©e avec url_for -->
     <form action="{{ url_for('register') }}" method="POST">
-        
         <div class="input-group">
             <label for="nom">Nom complet</label>
             <input type="text" id="nom" name="nom" required>
         </div>
 
         <div class="input-group">
-            <label for="email">Adresse email</label>
+            <label for="email">Adresse e-mail</label>
             <input type="email" id="email" name="email" required>
         </div>
 
@@ -50,7 +46,7 @@
     </form>
 
     <div class="footer">
-        DÃ©jÃ  un compte ? <a href="{{ url_for('login') }}">Se connecter</a>
+        Déjà un compte ? <a href="{{ url_for('login') }}">Se connecter</a>
     </div>
 </div>
 

@@ -2,14 +2,14 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Microsoft Authenticator : analyse</title>
+    <title>Google Authenticator : analyse</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-report-page">
     <main class="mar-wrapper">
         <header class="mar-header">
-            <h1>Microsoft Authenticator activé</h1>
+            <h1>Google Authenticator activé</h1>
             <p>Voici une synthèse utile pour une entreprise : bénéfices, limites et coûts.</p>
         </header>
 
@@ -17,10 +17,10 @@
             <article class="mar-card">
                 <h2>Avantages</h2>
                 <ul>
-                    <li>Renforce fortement la sécurité des comptes avec la 2FA.</li>
-                    <li>Application gratuite et facile à déployer pour les équipes.</li>
-                    <li>Compatible avec OTP et approbation push.</li>
-                    <li>Réduction du risque de compromission par mot de passe volé.</li>
+                    <li>Renforce la sécurité des comptes grâce à une 2FA locale.</li>
+                    <li>Application gratuite, simple à déployer à grande échelle.</li>
+                    <li>Fonctionne hors ligne une fois configurée (codes TOTP).</li>
+                    <li>Pas de dépendance aux SMS, donc moins d'attaques de type SIM swap.</li>
                 </ul>
             </article>
 
@@ -28,9 +28,9 @@
                 <h2>Limites</h2>
                 <ul>
                     <li>Dépendance au smartphone de l'utilisateur.</li>
-                    <li>Support nécessaire en cas de perte ou de changement de téléphone.</li>
-                    <li>Les codes OTP peuvent être victimes de phishing avancé.</li>
-                    <li>Expérience utilisateur plus lente qu'une connexion simple.</li>
+                    <li>Récupération complexe si l'utilisateur perd son téléphone sans sauvegarde.</li>
+                    <li>Les codes OTP restent vulnérables au phishing en temps réel.</li>
+                    <li>Pas de validation push native, expérience moins fluide pour certains usages.</li>
                 </ul>
             </article>
         </section>
@@ -50,22 +50,22 @@
                         <tr>
                             <td>Licence de l'application</td>
                             <td>0 EUR / utilisateur</td>
-                            <td>Microsoft Authenticator est gratuit.</td>
+                            <td>Google Authenticator est gratuit.</td>
                         </tr>
                         <tr>
-                            <td>Mise en place informatique</td>
+                            <td>Intégration technique</td>
                             <td>1 à 3 jours</td>
-                            <td>Configuration des politiques MFA et tests.</td>
+                            <td>Ajout TOTP backend, interface de configuration et tests de validation.</td>
                         </tr>
                         <tr>
                             <td>Support utilisateur</td>
                             <td>Variable</td>
-                            <td>Principal coût opérationnel (onboarding, récupération).</td>
+                            <td>Onboarding, renouvellement d'appareil, récupération de compte.</td>
                         </tr>
                         <tr>
                             <td>Formation interne</td>
-                            <td>Faible à modéré</td>
-                            <td>Guide court et communication sécurité.</td>
+                            <td>Faible</td>
+                            <td>Guide d'activation et rappel des bonnes pratiques anti-phishing.</td>
                         </tr>
                     </tbody>
                 </table>
