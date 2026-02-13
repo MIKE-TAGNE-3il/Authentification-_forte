@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Securite - Authentification</title>
+    <title>Sécurité - Authentification</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,8 +12,8 @@
 
 <div class="auth-page">
     <div class="auth-header">
-        <h2>Securisez votre compte</h2>
-        <p>Choisissez votre methode de double authentification (2FA)</p>
+        <h2>Sécurisez votre compte</h2>
+        <p>Choisissez votre méthode de double authentification (2FA).</p>
     </div>
 
     <form action="/select-auth-method" method="POST">
@@ -33,7 +33,7 @@
                 <div class="icon-box"><i data-lucide="shield-check"></i></div>
                 <div class="auth-content">
                     <span class="auth-title">Google Authenticator</span>
-                    <span class="auth-desc">Codes temporaires generes localement.</span>
+                    <span class="auth-desc">Codes temporaires générés localement.</span>
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
@@ -42,8 +42,8 @@
                 <input type="radio" name="auth_method" value="yubikey">
                 <div class="icon-box"><i data-lucide="key-round"></i></div>
                 <div class="auth-content">
-                    <span class="auth-title">Cle de securite</span>
-                    <span class="auth-desc">Protection materielle physique (YubiKey).</span>
+                    <span class="auth-title">Clé de sécurité</span>
+                    <span class="auth-desc">Protection matérielle physique (YubiKey).</span>
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
@@ -53,7 +53,7 @@
                 <div class="icon-box"><i data-lucide="refresh-cw"></i></div>
                 <div class="auth-content">
                     <span class="auth-title">Authy</span>
-                    <span class="auth-desc">Synchronisation multi-appareils securisee.</span>
+                    <span class="auth-desc">Synchronisation multi-appareils sécurisée.</span>
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
@@ -63,7 +63,7 @@
                 <div class="icon-box"><i data-lucide="unlock"></i></div>
                 <div class="auth-content">
                     <span class="auth-title">FreeOTP</span>
-                    <span class="auth-desc">Solution open-source respectueuse de la vie privee.</span>
+                    <span class="auth-desc">Solution open source respectueuse de la vie privée.</span>
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
@@ -72,15 +72,15 @@
                 <input type="radio" name="auth_method" value="email">
                 <div class="icon-box"><i data-lucide="mail"></i></div>
                 <div class="auth-content">
-                    <span class="auth-title">Code par email</span>
-                    <span class="auth-desc">Reception du code sur votre boite principale.</span>
+                    <span class="auth-title">Code par e-mail</span>
+                    <span class="auth-desc">Réception du code sur votre boîte principale.</span>
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
         </div>
 
         <div class="submit-container">
-            <button type="submit" class="btn-submit">Confirmer la methode</button>
+            <button type="submit" class="btn-submit">Confirmer la méthode</button>
         </div>
     </form>
 </div>

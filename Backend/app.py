@@ -16,6 +16,34 @@ except ImportError:
         generate_totp_secret,
         verify_totp,
     )
+try:
+    from google_authenticator import (
+        build_otpauth_uri as build_google_otpauth_uri,
+        build_qr_code_url as build_google_qr_code_url,
+        generate_totp_secret as generate_google_totp_secret,
+        verify_totp as verify_google_totp,
+    )
+except ImportError:
+    from Backend.google_authenticator import (
+        build_otpauth_uri as build_google_otpauth_uri,
+        build_qr_code_url as build_google_qr_code_url,
+        generate_totp_secret as generate_google_totp_secret,
+        verify_totp as verify_google_totp,
+    )
+try:
+    from authy_authenticator import (
+        build_otpauth_uri as build_authy_otpauth_uri,
+        build_qr_code_url as build_authy_qr_code_url,
+        generate_totp_secret as generate_authy_totp_secret,
+        verify_totp as verify_authy_totp,
+    )
+except ImportError:
+    from Backend.authy_authenticator import (
+        build_otpauth_uri as build_authy_otpauth_uri,
+        build_qr_code_url as build_authy_qr_code_url,
+        generate_totp_secret as generate_authy_totp_secret,
+        verify_totp as verify_authy_totp,
+    )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
@@ -173,6 +201,10 @@ def select_auth_method():
 
     if selected_method == "microsoft":
         return redirect(url_for("microsoft_auth_setup"))
+    if selected_method == "google":
+        return redirect(url_for("google_auth_setup"))
+    if selected_method == "authy":
+        return redirect(url_for("authy_auth_setup"))
 
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
@@ -219,6 +251,96 @@ def microsoft_auth_report():
         flash("Veuillez finaliser la verification Microsoft Authenticator.", "error")
         return redirect(url_for("microsoft_auth_setup"))
     return render_template("microsoft_auth_report.html")
+
+
+@app.route("/google-auth/setup", methods=["GET", "POST"])
+def google_auth_setup():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    secret = session.get("google_totp_secret")
+    if not secret:
+        secret = generate_google_totp_secret()
+        session["google_totp_secret"] = secret
+        session["google_auth_verified"] = False
+
+    account_name = session.get("user_name", "utilisateur")
+    issuer = "AuthentificationForte"
+    otpauth_uri = build_google_otpauth_uri(
+        secret=secret, account_name=account_name, issuer=issuer
+    )
+    qr_url = build_google_qr_code_url(otpauth_uri)
+
+    if request.method == "POST":
+        otp_code = request.form.get("otp_code", "").strip()
+        if verify_google_totp(secret=secret, user_code=otp_code):
+            session["google_auth_verified"] = True
+            flash("Google Authenticator configure avec succes.", "success")
+            return redirect(url_for("google_auth_report"))
+        flash("Code invalide. Verifiez l'application puis reessayez.", "error")
+
+    return render_template(
+        "google_auth_setup.html",
+        qr_url=qr_url,
+        secret=secret,
+        issuer=issuer,
+        account_name=account_name,
+    )
+
+
+@app.route("/google-auth/report")
+def google_auth_report():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    if not session.get("google_auth_verified"):
+        flash("Veuillez finaliser la verification Google Authenticator.", "error")
+        return redirect(url_for("google_auth_setup"))
+    return render_template("google_auth_report.html")
+
+
+@app.route("/authy-auth/setup", methods=["GET", "POST"])
+def authy_auth_setup():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    secret = session.get("authy_totp_secret")
+    if not secret:
+        secret = generate_authy_totp_secret()
+        session["authy_totp_secret"] = secret
+        session["authy_auth_verified"] = False
+
+    account_name = session.get("user_name", "utilisateur")
+    issuer = "AuthentificationForte"
+    otpauth_uri = build_authy_otpauth_uri(
+        secret=secret, account_name=account_name, issuer=issuer
+    )
+    qr_url = build_authy_qr_code_url(otpauth_uri)
+
+    if request.method == "POST":
+        otp_code = request.form.get("otp_code", "").strip()
+        if verify_authy_totp(secret=secret, user_code=otp_code):
+            session["authy_auth_verified"] = True
+            flash("Authy est configure avec succes.", "success")
+            return redirect(url_for("authy_auth_report"))
+        flash("Code invalide. Verifiez l'application puis reessayez.", "error")
+
+    return render_template(
+        "authy_auth_setup.html",
+        qr_url=qr_url,
+        secret=secret,
+        issuer=issuer,
+        account_name=account_name,
+    )
+
+
+@app.route("/authy-auth/report")
+def authy_auth_report():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    if not session.get("authy_auth_verified"):
+        flash("Veuillez finaliser la verification Authy.", "error")
+        return redirect(url_for("authy_auth_setup"))
+    return render_template("authy_auth_report.html")
 
 
 if __name__ == "__main__":
