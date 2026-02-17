@@ -44,6 +44,20 @@ except ImportError:
         generate_totp_secret as generate_authy_totp_secret,
         verify_totp as verify_authy_totp,
     )
+try:
+    from freeotp_authenticator import (
+        build_otpauth_uri as build_freeotp_otpauth_uri,
+        build_qr_code_url as build_freeotp_qr_code_url,
+        generate_totp_secret as generate_freeotp_totp_secret,
+        verify_totp as verify_freeotp_totp,
+    )
+except ImportError:
+    from Backend.freeotp_authenticator import (
+        build_otpauth_uri as build_freeotp_otpauth_uri,
+        build_qr_code_url as build_freeotp_qr_code_url,
+        generate_totp_secret as generate_freeotp_totp_secret,
+        verify_totp as verify_freeotp_totp,
+    )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
@@ -205,6 +219,8 @@ def select_auth_method():
         return redirect(url_for("google_auth_setup"))
     if selected_method == "authy":
         return redirect(url_for("authy_auth_setup"))
+    if selected_method == "freeotp":
+        return redirect(url_for("freeotp_auth_setup"))
 
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
@@ -341,6 +357,51 @@ def authy_auth_report():
         flash("Veuillez finaliser la verification Authy.", "error")
         return redirect(url_for("authy_auth_setup"))
     return render_template("authy_auth_report.html")
+
+
+@app.route("/freeotp-auth/setup", methods=["GET", "POST"])
+def freeotp_auth_setup():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    secret = session.get("freeotp_totp_secret")
+    if not secret:
+        secret = generate_freeotp_totp_secret()
+        session["freeotp_totp_secret"] = secret
+        session["freeotp_auth_verified"] = False
+
+    account_name = session.get("user_name", "utilisateur")
+    issuer = "AuthentificationForte"
+    otpauth_uri = build_freeotp_otpauth_uri(
+        secret=secret, account_name=account_name, issuer=issuer
+    )
+    qr_url = build_freeotp_qr_code_url(otpauth_uri)
+
+    if request.method == "POST":
+        otp_code = request.form.get("otp_code", "").strip()
+        if verify_freeotp_totp(secret=secret, user_code=otp_code):
+            session["freeotp_auth_verified"] = True
+            flash("FreeOTP est configure avec succes.", "success")
+            return redirect(url_for("freeotp_auth_report"))
+        flash("Code invalide. Verifiez l'application puis reessayez.", "error")
+
+    return render_template(
+        "freeotp_auth_setup.html",
+        qr_url=qr_url,
+        secret=secret,
+        issuer=issuer,
+        account_name=account_name,
+    )
+
+
+@app.route("/freeotp-auth/report")
+def freeotp_auth_report():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    if not session.get("freeotp_auth_verified"):
+        flash("Veuillez finaliser la verification FreeOTP.", "error")
+        return redirect(url_for("freeotp_auth_setup"))
+    return render_template("freeotp_auth_report.html")
 
 
 if __name__ == "__main__":

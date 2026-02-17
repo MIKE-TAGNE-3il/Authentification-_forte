@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>FreeOTP : analyse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="microsoft-auth-report-page">
+    <main class="mar-wrapper">
+        <header class="mar-header">
+            <h1>FreeOTP activé</h1>
+            <p>Voici une synthèse utile pour une entreprise : bénéfices, limites et coûts.</p>
+        </header>
+
+        <section class="mar-grid">
+            <article class="mar-card">
+                <h2>Avantages</h2>
+                <ul>
+                    <li>Application open source, sans coût de licence par utilisateur.</li>
+                    <li>Renforce la sécurité avec des codes TOTP temporaires.</li>
+                    <li>Fonctionne hors ligne après configuration.</li>
+                    <li>Réduit le risque lié aux mots de passe compromis.</li>
+                </ul>
+            </article>
+
+            <article class="mar-card">
+                <h2>Limites</h2>
+                <ul>
+                    <li>Dépendance au smartphone de l'utilisateur.</li>
+                    <li>Perte d'appareil problématique sans procédure de récupération.</li>
+                    <li>Les codes OTP restent vulnérables au phishing en temps réel.</li>
+                    <li>Moins de fonctionnalités avancées qu'une solution MFA entreprise complète.</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="mar-card">
+            <h2>Coût pour une entreprise</h2>
+            <div class="mar-table-wrap">
+                <table class="mar-table">
+                    <thead>
+                        <tr>
+                            <th>Poste</th>
+                            <th>Estimation</th>
+                            <th>Commentaire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Licence application</td>
+                            <td>0 EUR / utilisateur</td>
+                            <td>FreeOTP est gratuit et open source.</td>
+                        </tr>
+                        <tr>
+                            <td>Intégration technique</td>
+                            <td>1 à 3 jours</td>
+                            <td>Ajout TOTP backend, écran de configuration et tests de validation.</td>
+                        </tr>
+                        <tr>
+                            <td>Support utilisateur</td>
+                            <td>Variable</td>
+                            <td>Onboarding, changement d'appareil et récupération de compte.</td>
+                        </tr>
+                        <tr>
+                            <td>Formation interne</td>
+                            <td>Faible</td>
+                            <td>Guide d'activation et sensibilisation anti-phishing.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="mar-actions">
+            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
+            <a class="mar-link" href="{{ url_for('logout') }}">Se déconnecter</a>
+        </div>
+    </main>
+</body>
+</html>
