@@ -85,6 +85,43 @@ def get_connection():
     )
 
 
+def init_database_schema():
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INT(100) NOT NULL AUTO_INCREMENT,
+                nom VARCHAR(500) NOT NULL,
+                email VARCHAR(500) NOT NULL,
+                password VARCHAR(1000) NOT NULL,
+                createdAt DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY email (email)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+            """
+        )
+        # Corrige les anciennes bases ou id n'etait pas AUTO_INCREMENT.
+        cursor.execute(
+            """
+            ALTER TABLE users
+            MODIFY COLUMN id INT(100) NOT NULL AUTO_INCREMENT
+            """
+        )
+        conn.commit()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+init_database_schema()
+
+
 @app.route("/")
 def home():
     return redirect(url_for("login"))
@@ -125,10 +162,14 @@ def register():
             conn.commit()
             flash("Inscription reussie. Vous pouvez vous connecter.", "success")
             return redirect(url_for("login"))
-        except pymysql.err.IntegrityError:
+        except pymysql.err.IntegrityError as exc:
             if conn:
                 conn.rollback()
-            flash("Cet email est deja utilise.", "error")
+            mysql_error_code = exc.args[0] if exc.args else None
+            if mysql_error_code == 1062:
+                flash("Cet email est deja utilise.", "error")
+            else:
+                flash("Erreur d'integrite de la base de donnees.", "error")
             return render_template("register.html")
         except Exception:
             if conn:
