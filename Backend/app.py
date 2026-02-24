@@ -1,6 +1,9 @@
 from flask import Flask, request, render_template, flash, redirect, url_for, session
+from dotenv import load_dotenv
+load_dotenv()
 import pymysql
 import os
+import time
 import bcrypt
 try:
     from microsoft_authenticator import (
@@ -59,6 +62,13 @@ except ImportError:
         verify_totp as verify_freeotp_totp,
     )
 
+# email authentication blueprint (moved out of app)
+try:
+    from mail_authenticator import email_auth_bp
+except ImportError:
+    from Backend.mail_authenticator import email_auth_bp
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
 
@@ -68,6 +78,9 @@ app = Flask(
     static_folder=os.path.join(PROJECT_DIR, "static"),
     static_url_path="/static",
 )
+
+# register blueprints imported earlier
+app.register_blueprint(email_auth_bp)
 
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-in-production")
 
@@ -183,6 +196,7 @@ def login():
 
         session["user_id"] = user["id"]
         session["user_name"] = user["nom"]
+        session["user_email"] = user.get("email")  # nécessaire pour la 2FA par e-mail
         return redirect(url_for("choose_auth"))
 
     return render_template("login.html")
@@ -221,6 +235,8 @@ def select_auth_method():
         return redirect(url_for("authy_auth_setup"))
     if selected_method == "freeotp":
         return redirect(url_for("freeotp_auth_setup"))
+    if selected_method == "email":
+        return redirect(url_for("email_auth_bp.email_auth_setup"))
 
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
@@ -403,6 +419,8 @@ def freeotp_auth_report():
         return redirect(url_for("freeotp_auth_setup"))
     return render_template("freeotp_auth_report.html")
 
+
+# --- authentification par e-mail ------------------------------------------------
 
 if __name__ == "__main__":
     app.run(debug=True)
