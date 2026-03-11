@@ -58,6 +58,10 @@ except ImportError:
         generate_totp_secret as generate_freeotp_totp_secret,
         verify_totp as verify_freeotp_totp,
     )
+try:
+    from cryptonox_authenticator import cryptonox_auth_bp, init_webauthn_table
+except ImportError:
+    from Backend.cryptonox_authenticator import cryptonox_auth_bp, init_webauthn_table
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
@@ -68,6 +72,8 @@ app = Flask(
     static_folder=os.path.join(PROJECT_DIR, "static"),
     static_url_path="/static",
 )
+
+app.register_blueprint(cryptonox_auth_bp)
 
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-in-production")
 
@@ -120,6 +126,7 @@ def init_database_schema():
 
 
 init_database_schema()
+init_webauthn_table()
 
 
 @app.route("/")
@@ -262,6 +269,8 @@ def select_auth_method():
         return redirect(url_for("authy_auth_setup"))
     if selected_method == "freeotp":
         return redirect(url_for("freeotp_auth_setup"))
+    if selected_method == "yubikey":
+        return redirect(url_for("cryptonox_auth_bp.cryptonox_auth_setup"))
 
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
