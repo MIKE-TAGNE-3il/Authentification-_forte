@@ -269,7 +269,7 @@ def select_auth_method():
         return redirect(url_for("authy_auth_setup"))
     if selected_method == "freeotp":
         return redirect(url_for("freeotp_auth_setup"))
-    if selected_method == "yubikey":
+    if selected_method == "cryptonox":
         return redirect(url_for("cryptonox_auth_bp.cryptonox_auth_setup"))
 
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")

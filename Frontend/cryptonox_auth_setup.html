@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="microsoft-auth-page">
+<body class="cryptonox-auth-page">
     <div class="msa-wrapper">
         <div class="msa-header">
             <h1>Configurer la carte Cryptonox</h1>
@@ -75,11 +75,39 @@
             return buf.buffer;
         }
 
+        function friendlyError(err) {
+            const name = err.name || '';
+            const msg  = (err.message || '').toLowerCase();
+            if (name === 'NotAllowedError' || msg.includes('not allowed')) {
+                return 'Opération annulée ou expirée. Réessayez et interagissez avec la carte dans les 60 secondes.';
+            }
+            if (name === 'InvalidStateError') {
+                return 'Cette carte est déjà enregistrée pour ce compte.';
+            }
+            if (name === 'NotSupportedError') {
+                return 'Votre navigateur ne supporte pas WebAuthn. Utilisez Chrome ou Edge.';
+            }
+            if (name === 'SecurityError' || msg.includes('domain') || msg.includes('relying party')) {
+                return 'Domaine invalide. Accédez à l\'application via http://localhost:5000.';
+            }
+            if (name === 'AbortError') {
+                return 'Opération interrompue. Vérifiez que la carte est bien insérée et réessayez.';
+            }
+            if (msg.includes('mute') || msg.includes('not respond')) {
+                return 'La carte ne répond pas. Retirez-la, réinsérez-la et réessayez.';
+            }
+            return 'Erreur inattendue : ' + err.message;
+        }
+
         btnRegister.addEventListener('click', async () => {
             btnRegister.disabled = true;
             showStatus('Récupération du challenge...', 'info');
 
             try {
+                if (!window.PublicKeyCredential) {
+                    throw Object.assign(new Error(), { name: 'NotSupportedError' });
+                }
+
                 // 1. Obtenir les options depuis le serveur
                 const beginResp = await fetch('/webauthn/register/begin', {
                     method: 'POST',
@@ -101,10 +129,12 @@
                     }));
                 }
 
-                showStatus('Veuillez interagir avec votre carte Cryptonox...', 'info');
+                showStatus('Carte détectée — insérez-la et appuyez sur le bouton du lecteur...', 'info');
 
                 // 3. Demander au navigateur / Windows d'utiliser la carte
                 const credential = await navigator.credentials.create({ publicKey: options });
+
+                showStatus('Validation en cours...', 'info');
 
                 // 4. Encoder la réponse et envoyer au serveur
                 const payload = {
@@ -125,14 +155,14 @@
 
                 if (!completeResp.ok) {
                     const err = await completeResp.json();
-                    throw new Error(err.error || 'Validation échouée');
+                    throw new Error(err.error || 'Validation échouée côté serveur.');
                 }
 
                 showStatus('Carte enregistrée avec succès ! Redirection...', 'success');
                 setTimeout(() => { window.location.href = '/webauthn/report'; }, 1500);
 
             } catch (err) {
-                showStatus('Erreur : ' + err.message, 'error');
+                showStatus(friendlyError(err), 'error');
                 btnRegister.disabled = false;
             }
         });
