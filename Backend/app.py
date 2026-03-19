@@ -66,6 +66,11 @@ try:
 except ImportError:
     from Backend.cryptonox_authenticator import cryptonox_auth_bp, init_webauthn_table
 
+try:
+    from nfc_authenticator import nfc_auth_bp
+except ImportError:
+    from Backend.nfc_authenticator import nfc_auth_bp
+
 # email authentication blueprint (moved out of app)
 try:
     from mail_authenticator import email_auth_bp
@@ -84,6 +89,7 @@ app = Flask(
 )
 
 app.register_blueprint(cryptonox_auth_bp)
+app.register_blueprint(nfc_auth_bp)
 app.register_blueprint(email_auth_bp)
 
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-in-production")
@@ -283,6 +289,8 @@ def select_auth_method():
         return redirect(url_for("freeotp_auth_setup"))
     if selected_method == "cryptonox":
         return redirect(url_for("cryptonox_auth_bp.cryptonox_auth_setup"))
+    if selected_method == "nfc":
+        return redirect(url_for("nfc_auth_bp.nfc_auth_setup"))
     if selected_method == "email":
         return redirect(url_for("email_auth_bp.email_auth_setup"))
 

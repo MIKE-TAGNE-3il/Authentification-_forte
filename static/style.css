@@ -322,7 +322,8 @@ body.choose-auth-page .btn-submit:hover {
 
 /* Microsoft Auth setup page */
 body.microsoft-auth-page,
-body.cryptonox-auth-page {
+body.cryptonox-auth-page,
+body.nfc-auth-page {
     min-height: 100vh;
     margin: 0;
     padding: 24px 14px;
