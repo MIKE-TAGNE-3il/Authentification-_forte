@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Auth par e-mail : rapport</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="microsoft-auth-report-page">
+    <main class="mar-wrapper">
+        <header class="mar-header">
+            <h1>Authentification par e-mail activée</h1>
+            <p>Voici une synthèse utile pour une entreprise : avantages, limites et coûts.</p>
+        </header>
+
+        <section class="mar-grid">
+            <article class="mar-card">
+                <h2>Avantages</h2>
+                <ul>
+                    <li>Pas besoin d'application mobile supplémentaire.</li>
+                    <li>Fait appel à l'infrastructure de messagerie existante.</li>
+                    <li>Simple à déployer pour les utilisateurs non techniques.</li>
+                    <li>Temps de mise en œuvre rapide.</li>
+                </ul>
+            </article>
+
+            <article class="mar-card">
+                <h2>Limites</h2>
+                <ul>
+                    <li>Requiert un accès à la boîte de réception et dépend du fournisseur de messagerie.</li>
+                    <li>Les e-mails peuvent être retardés, filtrés ou interceptés.</li>
+                    <li>Moins sécurisé que des codes générés localement ou des clés matérielles.</li>
+                    <li>Un pirate ayant accès à la messagerie peut contourner la 2FA.</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="mar-card"> 
+            <h2>Coût pour une entreprise</h2>
+            <div class="mar-table-wrap">
+                <table class="mar-table">
+                    <thead>
+                        <tr>
+                            <th>Poste</th>
+                            <th>Estimation</th>
+                            <th>Commentaire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Infrastructure SMTP</td>
+                            <td>Nul à modéré</td>
+                            <td>Utilisation d'un serveur existant ou service tiers.
+</td>
+                        </tr>
+                        <tr>
+                            <td>Intégration technique</td>
+                            <td>1 à 2 jours</td>
+                            <td>Envoi des codes, expiration et suivi des sessions.</td>
+                        </tr>
+                        <tr>
+                            <td>Support utilisateur</td>
+                            <td>Faible</td>
+                            <td>Assistance pour les emails non reçus ou codes expirés.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="mar-actions">
+            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
+            <a class="mar-link" href="{{ url_for('logout') }}">Se déconnecter</a>
+        </div>
+    </main>
+</body>
+</html>
