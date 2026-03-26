@@ -74,6 +74,39 @@ def login():
         flash("Identifiants incorrects.", "danger")
     return render_template("login.html")
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        nom = request.form.get("nom")
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password")
+
+        # Hachage du mot de passe
+        hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+
+        try:
+            conn = get_connection()
+            with conn.cursor() as cursor:
+                # Vérifier si l'email existe déjà
+                cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    flash("Cet email est déjà utilisé.", "danger")
+                    return render_template("register.html")
+                
+                # Insertion du nouvel utilisateur
+                cursor.execute(
+                    "INSERT INTO users (nom, email, password) VALUES (%s, %s, %s)",
+                    (nom, email, hashed_pw.decode("utf-8"))
+                )
+            conn.close()
+            flash("Compte créé avec succès ! Connectez-vous.", "success")
+            return redirect(url_for("login"))
+            
+        except Exception as e:
+            flash(f"Erreur lors de l'inscription : {e}", "danger")
+            
+    return render_template("register.html")
+
 @app.route("/choose-auth")
 def choose_auth():
     if "user_id" not in session:
