@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuration NFC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="nfc-auth-page">
+    <div class="msa-wrapper">
+        <div class="msa-header">
+            <h1>Configurer l'authentification NFC</h1>
+            <p>Suivez les étapes ci-dessous pour enregistrer votre carte NFC.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div id="js-status" class="messages" style="display:none;">
+            <div id="js-status-msg" class="flash info"></div>
+        </div>
+
+        <div class="msa-grid">
+            <section class="msa-card">
+                <h2>1. Préparer le matériel</h2>
+                <p>Connectez votre lecteur NFC/RFID USB à votre poste. Assurez-vous que le lecteur est bien reconnu par Windows (Gestionnaire de périphériques).</p>
+            </section>
+
+            <section class="msa-card">
+                <h2>2. Lire la carte</h2>
+                <p>Posez votre carte NFC sur le lecteur, puis cliquez sur le bouton ci-dessous. L'UID de votre carte sera lu et enregistré pour votre session.</p>
+                <div class="msa-form">
+                    <button id="btn-read" class="btn-submit" type="button">
+                        Lire ma carte NFC
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <div class="msa-actions">
+            <a href="{{ url_for('choose_auth') }}">Retour au choix des méthodes</a>
+        </div>
+    </div>
+
+    <script>
+        const btnRead   = document.getElementById('btn-read');
+        const statusBox = document.getElementById('js-status');
+        const statusMsg = document.getElementById('js-status-msg');
+
+        function showStatus(msg, type) {
+            statusMsg.textContent = msg;
+            statusMsg.className   = 'flash ' + type;
+            statusBox.style.display = 'block';
+        }
+
+        btnRead.addEventListener('click', async () => {
+            btnRead.disabled = true;
+            showStatus('Lecture de la carte en cours…', 'info');
+
+            try {
+                const resp = await fetch('/read-nfc');
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    throw new Error(data.error || 'Erreur serveur');
+                }
+
+                showStatus('Carte lue avec succès ! UID : ' + data.uid + ' — Redirection…', 'success');
+                setTimeout(() => { window.location.href = '/nfc-auth/report'; }, 1500);
+
+            } catch (err) {
+                showStatus('Erreur : ' + err.message, 'error');
+                btnRead.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
