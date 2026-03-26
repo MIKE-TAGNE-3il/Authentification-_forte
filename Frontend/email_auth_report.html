@@ -2,76 +2,64 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Auth par e-mail : rapport</title>
+    <title>E-mail OTP activé — AuthForte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-report-page">
-    <main class="mar-wrapper">
-        <header class="mar-header">
+<main class="mar-wrapper">
+
+    <header class="mar-header">
+        <div class="mar-header-icon">✓</div>
+        <div>
             <h1>Authentification par e-mail activée</h1>
-            <p>Voici une synthèse utile pour une entreprise : avantages, limites et coûts.</p>
-        </header>
-
-        <section class="mar-grid">
-            <article class="mar-card">
-                <h2>Avantages</h2>
-                <ul>
-                    <li>Pas besoin d'application mobile supplémentaire.</li>
-                    <li>Fait appel à l'infrastructure de messagerie existante.</li>
-                    <li>Simple à déployer pour les utilisateurs non techniques.</li>
-                    <li>Temps de mise en œuvre rapide.</li>
-                </ul>
-            </article>
-
-            <article class="mar-card">
-                <h2>Limites</h2>
-                <ul>
-                    <li>Requiert un accès à la boîte de réception et dépend du fournisseur de messagerie.</li>
-                    <li>Les e-mails peuvent être retardés, filtrés ou interceptés.</li>
-                    <li>Moins sécurisé que des codes générés localement ou des clés matérielles.</li>
-                    <li>Un pirate ayant accès à la messagerie peut contourner la 2FA.</li>
-                </ul>
-            </article>
-        </section>
-
-        <section class="mar-card"> 
-            <h2>Coût pour une entreprise</h2>
-            <div class="mar-table-wrap">
-                <table class="mar-table">
-                    <thead>
-                        <tr>
-                            <th>Poste</th>
-                            <th>Estimation</th>
-                            <th>Commentaire</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Infrastructure SMTP</td>
-                            <td>Nul à modéré</td>
-                            <td>Utilisation d'un serveur existant ou service tiers.
-</td>
-                        </tr>
-                        <tr>
-                            <td>Intégration technique</td>
-                            <td>1 à 2 jours</td>
-                            <td>Envoi des codes, expiration et suivi des sessions.</td>
-                        </tr>
-                        <tr>
-                            <td>Support utilisateur</td>
-                            <td>Faible</td>
-                            <td>Assistance pour les emails non reçus ou codes expirés.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <div class="mar-actions">
-            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
-            <a class="mar-link" href="{{ url_for('logout') }}">Se déconnecter</a>
+            <p>Code OTP vérifié. Voici une synthèse pour votre entreprise.</p>
         </div>
-    </main>
+    </header>
+
+    <section class="mar-grid">
+        <article class="mar-card">
+            <h2>Avantages</h2>
+            <ul>
+                <li>Pas d'application mobile supplémentaire requise.</li>
+                <li>Utilise l'infrastructure e-mail existante.</li>
+                <li>Simple à déployer pour des utilisateurs non techniques.</li>
+                <li>Mise en œuvre rapide.</li>
+            </ul>
+        </article>
+        <article class="mar-card">
+            <h2>Limites</h2>
+            <ul>
+                <li>Dépendance au fournisseur de messagerie.</li>
+                <li>E-mails pouvant être retardés ou filtrés.</li>
+                <li>Moins sécurisé que les codes générés localement.</li>
+                <li>Accès à la messagerie = contournement possible de la 2FA.</li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="mar-card" style="margin-bottom:16px;">
+        <h2>Coût pour une entreprise</h2>
+        <div class="mar-table-wrap">
+            <table class="mar-table">
+                <thead><tr><th>Poste</th><th>Estimation</th><th>Commentaire</th></tr></thead>
+                <tbody>
+                    <tr><td>Infrastructure SMTP</td><td>/dev/null à modéré</td><td>Serveur existant ou service tiers (SendGrid, etc.).</td></tr>
+                    <tr><td>Intégration technique</td><td>1 à 2 jours</td><td>Envoi des codes, expiration, gestion sessions.</td></tr>
+                    <tr><td>Support utilisateur</td><td>Faible</td><td>Emails non reçus, codes expirés.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="mar-actions">
+        <a class="mar-link" href="{{ url_for('choose_auth') }}">← Retour aux méthodes</a>
+        <a class="mar-link danger" href="{{ url_for('logout') }}">Se déconnecter</a>
+    </div>
+
+</main>
 </body>
 </html>

@@ -2,66 +2,21 @@ from flask import Flask, request, render_template, flash, redirect, url_for, ses
 import pymysql
 import os
 import bcrypt
-import traceback
+import logging
 from dotenv import load_dotenv
 
-# --- IMPORTS AUTHENTICATEURS TOTP (Microsoft, Google, Authy, FreeOTP) ---
+# --- IMPORT TOTP GÉNÉRIQUE (remplace les 4 imports redondants) ---
 try:
-    from microsoft_authenticator import (
-        build_otpauth_uri,
-        build_qr_code_url,
-        generate_totp_secret,
-        verify_totp,
-    )
+    from totp_core import TOTP_CONFIGS, generate_totp_secret, build_otpauth_uri, build_qr_code_url, verify_totp
 except ImportError:
-    from Backend.microsoft_authenticator import (
-        build_otpauth_uri,
-        build_qr_code_url,
-        generate_totp_secret,
-        verify_totp,
-    )
-try:
-    from google_authenticator import (
-        build_otpauth_uri as build_google_otpauth_uri,
-        build_qr_code_url as build_google_qr_code_url,
-        generate_totp_secret as generate_google_totp_secret,
-        verify_totp as verify_google_totp,
-    )
-except ImportError:
-    from Backend.google_authenticator import (
-        build_otpauth_uri as build_google_otpauth_uri,
-        build_qr_code_url as build_google_qr_code_url,
-        generate_totp_secret as generate_google_totp_secret,
-        verify_totp as verify_google_totp,
-    )
-try:
-    from authy_authenticator import (
-        build_otpauth_uri as build_authy_otpauth_uri,
-        build_qr_code_url as build_authy_qr_code_url,
-        generate_totp_secret as generate_authy_totp_secret,
-        verify_totp as verify_authy_totp,
-    )
-except ImportError:
-    from Backend.authy_authenticator import (
-        build_otpauth_uri as build_authy_otpauth_uri,
-        build_qr_code_url as build_authy_qr_code_url,
-        generate_totp_secret as generate_authy_totp_secret,
-        verify_totp as verify_authy_totp,
-    )
-try:
-    from freeotp_authenticator import (
-        build_otpauth_uri as build_freeotp_otpauth_uri,
-        build_qr_code_url as build_freeotp_qr_code_url,
-        generate_totp_secret as generate_freeotp_totp_secret,
-        verify_totp as verify_freeotp_totp,
-    )
-except ImportError:
-    from Backend.freeotp_authenticator import (
-        build_otpauth_uri as build_freeotp_otpauth_uri,
-        build_qr_code_url as build_freeotp_qr_code_url,
-        generate_totp_secret as generate_freeotp_totp_secret,
-        verify_totp as verify_freeotp_totp,
-    )
+    from Backend.totp_core import TOTP_CONFIGS, generate_totp_secret, build_otpauth_uri, build_qr_code_url, verify_totp
+
+# Configuration du logger applicatif
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("app")
 
 # --- IMPORTS BLUEPRINTS (Cryptonox, NFC) ---
 try:
@@ -70,9 +25,14 @@ except ImportError:
     from Backend.cryptonox_authenticator import cryptonox_auth_bp, init_webauthn_table
 
 try:
-    from nfc_authenticator import nfc_auth_bp
+    from nfc_authenticator import nfc_auth_bp, init_nfc_table
 except ImportError:
-    from Backend.nfc_authenticator import nfc_auth_bp
+    from Backend.nfc_authenticator import nfc_auth_bp, init_nfc_table
+
+try:
+    from mail_authenticator import email_auth_bp
+except ImportError:
+    from Backend.mail_authenticator import email_auth_bp
 
 # --- IMPORTS WEBAUTHN (v2.7.1) ---
 from webauthn_handler import get_registration_options, verify_registration
@@ -147,6 +107,7 @@ def init_database_schema():
 
 init_database_schema()
 init_webauthn_table()
+init_nfc_table()
 
 # --- ROUTES D'AUTHENTIFICATION CLASSIQUE ---
 
@@ -222,14 +183,8 @@ def select_auth_method():
 
     session["selected_auth_method"] = selected_method
 
-    if selected_method == "microsoft":
-        return redirect(url_for("microsoft_auth_setup"))
-    if selected_method == "google":
-        return redirect(url_for("google_auth_setup"))
-    if selected_method == "authy":
-        return redirect(url_for("authy_auth_setup"))
-    if selected_method == "freeotp":
-        return redirect(url_for("freeotp_auth_setup"))
+    if selected_method in TOTP_CONFIGS:
+        return redirect(url_for("totp_auth_setup", method=selected_method))
     if selected_method == "cryptonox":
         return redirect(url_for("cryptonox_auth_bp.cryptonox_auth_setup"))
     if selected_method == "nfc":
@@ -257,10 +212,9 @@ def webauthn_register_options():
 
         return Response(options_to_json(options), mimetype='application/json')
 
-    except Exception as e:
-        print("\n!!! ERREUR CRITIQUE DANS WEBAUTHN OPTIONS !!!")
-        traceback.print_exc()
-        return {"error": str(e)}, 500
+    except Exception:
+        logger.exception("Erreur WebAuthn options (user_id=%s)", session.get("user_id"))
+        return {"error": "Erreur interne lors de la génération des options WebAuthn."}, 500
 
 @app.route("/webauthn/register/verify", methods=["POST"])
 def webauthn_register_verify():
@@ -288,9 +242,9 @@ def webauthn_register_verify():
         session["auth_verified"] = True
         return {"status": "ok"}
 
-    except Exception as e:
-        traceback.print_exc()
-        return {"status": "error", "message": str(e)}, 400
+    except Exception:
+        logger.exception("Échec vérification WebAuthn (user_id=%s)", session.get("user_id"))
+        return {"status": "error", "message": "Échec de la vérification biométrique."}, 400
 
 # --- FIN ET DÉCONNEXION ---
 
@@ -298,7 +252,8 @@ def webauthn_register_verify():
 def auth_success():
     if "user_id" not in session:
         return redirect(url_for("login"))
-    if not session.get("auth_verified") and not session.get("microsoft_auth_verified"):
+    totp_verified = any(session.get(f"{m}_auth_verified") for m in TOTP_CONFIGS)
+    if not session.get("auth_verified") and not session.get("nfc_auth_verified") and not totp_verified:
         return redirect(url_for("choose_auth"))
     return render_template("auth_success.html")
 
@@ -307,190 +262,64 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-# --- MICROSOFT AUTHENTICATOR ---
+# --- AUTHENTICATEURS TOTP GÉNÉRIQUES ---
+# Une seule paire de routes remplace les 4×2 = 8 routes précédentes.
+# <method> accepte : microsoft | google | authy | freeotp
 
-@app.route("/microsoft-auth/setup", methods=["GET", "POST"])
-def microsoft_auth_setup():
+@app.route("/<method>-auth/setup", methods=["GET", "POST"])
+def totp_auth_setup(method: str):
+    if method not in TOTP_CONFIGS:
+        return redirect(url_for("choose_auth"))
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    secret = session.get("microsoft_totp_secret")
+    cfg = TOTP_CONFIGS[method]
+    secret_key = f"{method}_totp_secret"
+    verified_key = f"{method}_auth_verified"
+
+    secret = session.get(secret_key)
     if not secret:
         secret = generate_totp_secret()
-        session["microsoft_totp_secret"] = secret
-        session["microsoft_auth_verified"] = False
+        session[secret_key] = secret
+        session[verified_key] = False
 
     account_name = session.get("user_name", "utilisateur")
-    issuer = "AuthentificationForte"
-    otpauth_uri = build_otpauth_uri(secret=secret, account_name=account_name, issuer=issuer)
+    otpauth_uri = build_otpauth_uri(secret=secret, account_name=account_name, issuer=cfg.issuer)
     qr_url = build_qr_code_url(otpauth_uri)
 
     if request.method == "POST":
         otp_code = request.form.get("otp_code", "").strip()
         if verify_totp(secret=secret, user_code=otp_code):
-            session["microsoft_auth_verified"] = True
-            flash("Microsoft Authenticator configure avec succes.", "success")
-            return redirect(url_for("microsoft_auth_report"))
-        flash("Code invalide. Verifiez l'application puis reessayez.", "error")
+            session[verified_key] = True
+            logger.info("TOTP validé : user_id=%s méthode=%s", session["user_id"], method)
+            flash(f"{cfg.label} configuré avec succès.", "success")
+            return redirect(url_for("totp_auth_report", method=method))
+        logger.warning("Code TOTP invalide : user_id=%s méthode=%s", session["user_id"], method)
+        flash("Code invalide. Vérifiez l'application puis réessayez.", "error")
 
     return render_template(
-        "microsoft_auth_setup.html",
+        f"{method}_auth_setup.html",
         qr_url=qr_url,
         secret=secret,
-        issuer=issuer,
+        issuer=cfg.issuer,
         account_name=account_name,
+        app_label=cfg.label,
     )
 
 
-@app.route("/microsoft-auth/report")
-def microsoft_auth_report():
+@app.route("/<method>-auth/report")
+def totp_auth_report(method: str):
+    if method not in TOTP_CONFIGS:
+        return redirect(url_for("choose_auth"))
     if "user_id" not in session:
         return redirect(url_for("login"))
-    if not session.get("microsoft_auth_verified"):
-        flash("Veuillez finaliser la verification Microsoft Authenticator.", "error")
-        return redirect(url_for("microsoft_auth_setup"))
-    return render_template("microsoft_auth_report.html")
-
-# --- GOOGLE AUTHENTICATOR ---
-
-@app.route("/google-auth/setup", methods=["GET", "POST"])
-def google_auth_setup():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    secret = session.get("google_totp_secret")
-    if not secret:
-        secret = generate_google_totp_secret()
-        session["google_totp_secret"] = secret
-        session["google_auth_verified"] = False
-
-    account_name = session.get("user_name", "utilisateur")
-    issuer = "AuthentificationForte"
-    otpauth_uri = build_google_otpauth_uri(
-        secret=secret, account_name=account_name, issuer=issuer
-    )
-    qr_url = build_google_qr_code_url(otpauth_uri)
-
-    if request.method == "POST":
-        otp_code = request.form.get("otp_code", "").strip()
-        if verify_google_totp(secret=secret, user_code=otp_code):
-            session["google_auth_verified"] = True
-            flash("Google Authenticator configure avec succes.", "success")
-            return redirect(url_for("google_auth_report"))
-        flash("Code invalide. Verifiez l'application puis reessayez.", "error")
-
-    return render_template(
-        "google_auth_setup.html",
-        qr_url=qr_url,
-        secret=secret,
-        issuer=issuer,
-        account_name=account_name,
-    )
+    if not session.get(f"{method}_auth_verified"):
+        flash(f"Veuillez finaliser la vérification {TOTP_CONFIGS[method].label}.", "error")
+        return redirect(url_for("totp_auth_setup", method=method))
+    return render_template(f"{method}_auth_report.html")
 
 
-@app.route("/google-auth/report")
-def google_auth_report():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-    if not session.get("google_auth_verified"):
-        flash("Veuillez finaliser la verification Google Authenticator.", "error")
-        return redirect(url_for("google_auth_setup"))
-    return render_template("google_auth_report.html")
-
-# --- AUTHY AUTHENTICATOR ---
-
-@app.route("/authy-auth/setup", methods=["GET", "POST"])
-def authy_auth_setup():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    secret = session.get("authy_totp_secret")
-    if not secret:
-        secret = generate_authy_totp_secret()
-        session["authy_totp_secret"] = secret
-        session["authy_auth_verified"] = False
-
-    account_name = session.get("user_name", "utilisateur")
-    issuer = "AuthentificationForte"
-    otpauth_uri = build_authy_otpauth_uri(
-        secret=secret, account_name=account_name, issuer=issuer
-    )
-    qr_url = build_authy_qr_code_url(otpauth_uri)
-
-    if request.method == "POST":
-        otp_code = request.form.get("otp_code", "").strip()
-        if verify_authy_totp(secret=secret, user_code=otp_code):
-            session["authy_auth_verified"] = True
-            flash("Authy est configure avec succes.", "success")
-            return redirect(url_for("authy_auth_report"))
-        flash("Code invalide. Verifiez l'application puis reessayez.", "error")
-
-    return render_template(
-        "authy_auth_setup.html",
-        qr_url=qr_url,
-        secret=secret,
-        issuer=issuer,
-        account_name=account_name,
-    )
-
-
-@app.route("/authy-auth/report")
-def authy_auth_report():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-    if not session.get("authy_auth_verified"):
-        flash("Veuillez finaliser la verification Authy.", "error")
-        return redirect(url_for("authy_auth_setup"))
-    return render_template("authy_auth_report.html")
-
-# --- FREEOTP AUTHENTICATOR ---
-
-@app.route("/freeotp-auth/setup", methods=["GET", "POST"])
-def freeotp_auth_setup():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    secret = session.get("freeotp_totp_secret")
-    if not secret:
-        secret = generate_freeotp_totp_secret()
-        session["freeotp_totp_secret"] = secret
-        session["freeotp_auth_verified"] = False
-
-    account_name = session.get("user_name", "utilisateur")
-    issuer = "AuthentificationForte"
-    otpauth_uri = build_freeotp_otpauth_uri(
-        secret=secret, account_name=account_name, issuer=issuer
-    )
-    qr_url = build_freeotp_qr_code_url(otpauth_uri)
-
-    if request.method == "POST":
-        otp_code = request.form.get("otp_code", "").strip()
-        if verify_freeotp_totp(secret=secret, user_code=otp_code):
-            session["freeotp_auth_verified"] = True
-            flash("FreeOTP est configure avec succes.", "success")
-            return redirect(url_for("freeotp_auth_report"))
-        flash("Code invalide. Verifiez l'application puis reessayez.", "error")
-
-    return render_template(
-        "freeotp_auth_setup.html",
-        qr_url=qr_url,
-        secret=secret,
-        issuer=issuer,
-        account_name=account_name,
-    )
-
-
-@app.route("/freeotp-auth/report")
-def freeotp_auth_report():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-    if not session.get("freeotp_auth_verified"):
-        flash("Veuillez finaliser la verification FreeOTP.", "error")
-        return redirect(url_for("freeotp_auth_setup"))
-    return render_template("freeotp_auth_report.html")
-
-
-# --- AUTHENTIFICATION PAR E-MAIL (blueprint à enregistrer séparément) ---
+# --- AUTHENTIFICATION PAR E-MAIL (blueprint) ---
 
 
 if __name__ == "__main__":

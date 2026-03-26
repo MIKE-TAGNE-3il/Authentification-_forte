@@ -1,88 +1,47 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Carte Cryptonox FIDO2 : analyse</title>
+    <meta charset="UTF-8"><title>Cryptonox activé — AuthForte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-report-page">
-    <main class="mar-wrapper">
-        <header class="mar-header">
-            <h1>Carte Cryptonox FIDO2 activée</h1>
-            <p>Voici une synthèse utile pour une entreprise : bénéfices, limites et coûts.</p>
-        </header>
-
-        <section class="mar-grid">
-            <article class="mar-card">
-                <h2>Avantages</h2>
-                <ul>
-                    <li>Authentification phishing-résistante : la clé privée ne quitte jamais la carte.</li>
-                    <li>Conforme aux standards FIDO2 / WebAuthn — interopérable avec tous les services compatibles.</li>
-                    <li>Support du contact (puce ISO 7816) et du sans-contact (NFC).</li>
-                    <li>Aucun mot de passe à retenir : facteur de possession pur.</li>
-                    <li>PIN protégé par compteur de tentatives — résistant au brute-force physique.</li>
-                </ul>
-            </article>
-
-            <article class="mar-card">
-                <h2>Limites</h2>
-                <ul>
-                    <li>Nécessite un lecteur de cartes sur chaque poste de travail.</li>
-                    <li>Perte ou oubli de la carte bloque l'accès sans procédure de récupération.</li>
-                    <li>HTTPS obligatoire : déploiement plus complexe qu'une 2FA applicative.</li>
-                    <li>Coût matériel par utilisateur supérieur aux solutions logicielles.</li>
-                    <li>Compatibilité navigateur à vérifier (Chrome et Edge recommandés).</li>
-                </ul>
-            </article>
-        </section>
-
-        <section class="mar-card">
-            <h2>Coût pour une entreprise</h2>
-            <div class="mar-table-wrap">
-                <table class="mar-table">
-                    <thead>
-                        <tr>
-                            <th>Poste</th>
-                            <th>Estimation</th>
-                            <th>Commentaire</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Carte Cryptonox FIDO2</td>
-                            <td>~20 à 40 EUR / carte</td>
-                            <td>Prix unitaire variable selon volume de commande.</td>
-                        </tr>
-                        <tr>
-                            <td>Lecteur de cartes USB</td>
-                            <td>~10 à 25 EUR / poste</td>
-                            <td>Nécessaire si le poste ne dispose pas de lecteur intégré.</td>
-                        </tr>
-                        <tr>
-                            <td>Intégration technique</td>
-                            <td>3 à 5 jours</td>
-                            <td>Mise en place WebAuthn backend, HTTPS, gestion des credentials en BDD.</td>
-                        </tr>
-                        <tr>
-                            <td>Support utilisateur</td>
-                            <td>Modéré</td>
-                            <td>Gestion des cartes perdues, oubliées ou bloquées par PIN erroné.</td>
-                        </tr>
-                        <tr>
-                            <td>Formation interne</td>
-                            <td>Faible</td>
-                            <td>Prise en main rapide : insérer la carte et saisir le PIN.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <div class="mar-actions">
-            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
-            <a class="mar-link" href="{{ url_for('logout') }}">Se déconnecter</a>
-        </div>
-    </main>
+<main class="mar-wrapper">
+    <header class="mar-header">
+        <div class="mar-header-icon">✓</div>
+        <div><h1>Carte Cryptonox enregistrée</h1><p>Authentification FIDO2 configurée avec succès.</p></div>
+    </header>
+    <section class="mar-grid">
+        <article class="mar-card"><h2>Avantages</h2><ul>
+            <li>Résistante au phishing — clé privée jamais exposée.</li>
+            <li>Standard FIDO2/WebAuthn reconnu mondialement.</li>
+            <li>Aucun mot de passe à mémoriser.</li>
+            <li>Peut remplacer entièrement le mot de passe.</li>
+        </ul></article>
+        <article class="mar-card"><h2>Limites</h2><ul>
+            <li>Nécessite un lecteur de cartes sur chaque poste.</li>
+            <li>Coût matériel par utilisateur (~20-50 €).</li>
+            <li>Récupération complexe en cas de perte de la carte.</li>
+            <li>Intégration technique plus longue que le TOTP.</li>
+        </ul></article>
+    </section>
+    <section class="mar-card" style="margin-bottom:16px;"><h2>Coût pour une entreprise</h2>
+        <div class="mar-table-wrap"><table class="mar-table">
+            <thead><tr><th>Poste</th><th>Estimation</th><th>Commentaire</th></tr></thead>
+            <tbody>
+                <tr><td>Carte Cryptonox</td><td>~20-50 € / carte</td><td>Prix unitaire selon le volume.</td></tr>
+                <tr><td>Lecteur PC/SC</td><td>~10-30 € / poste</td><td>Nécessaire sur chaque machine.</td></tr>
+                <tr><td>Intégration technique</td><td>3 à 5 jours</td><td>FIDO2 server, enrôlement, gestion.</td></tr>
+                <tr><td>Support &amp; gestion</td><td>Modéré</td><td>Cartes perdues, renouvellements.</td></tr>
+            </tbody>
+        </table></div>
+    </section>
+    <div class="mar-actions">
+        <a class="mar-link" href="{{ url_for('choose_auth') }}">← Retour aux méthodes</a>
+        <a class="mar-link danger" href="{{ url_for('logout') }}">Se déconnecter</a>
+    </div>
+</main>
 </body>
 </html>

@@ -2,48 +2,63 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Configuration par e-mail</title>
+    <title>Authentification par e-mail — AuthForte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="mail-auth-page">
-    <div class="msa-wrapper">
-        <div class="msa-header">
-            <h1>Activer l'authentification par e-mail</h1>
-            <p>Un code à 6 chiffres a été envoyé à <strong>{{ email }}</strong>. Il est valable pendant quelques minutes.</p>
-            <p>Rechargez la page pour demander un nouveau code.</p>
-        </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+<header class="setup-topbar">
+    <a href="{{ url_for('choose_auth') }}" class="back-link">← Retour</a>
+    <span class="topbar-title">✉️ Code par e-mail</span>
+    <span></span>
+</header>
 
-        <section class="msa-card">
-            <h2>Entrez votre code</h2>
-            <form method="POST" class="msa-form">
-                <input
-                    type="text"
-                    name="otp_code"
-                    maxlength="6"
-                    minlength="6"
-                    pattern="[0-9]{6}"
-                    inputmode="numeric"
-                    placeholder="Ex : 123456"
-                    required
-                >
-                <button type="submit" class="btn-submit">Vérifier le code</button>
-            </form>
-        </section>
-
-        <div class="msa-actions">
-            <a href="{{ url_for('choose_auth') }}">Retour au choix des méthodes</a>
-        </div>
+<div class="msa-wrapper">
+    <div class="msa-header">
+        <div class="page-eyebrow">🔐 Configuration 2FA</div>
+        <h1>Code par e-mail</h1>
+        <p>Un code à 6 chiffres a été envoyé à <strong>{{ email }}</strong>. Vérifiez votre boîte de réception.</p>
     </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="messages">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <section class="msa-card" style="max-width:560px;">
+        <h2><span class="step-num">1</span> Entrez votre code</h2>
+        <p>Copiez le code à 6 chiffres reçu par e-mail. Il expire dans <strong>10 minutes</strong>.</p>
+        <form method="POST" class="msa-form">
+            <input
+                type="text"
+                name="otp_code"
+                maxlength="6"
+                minlength="6"
+                pattern="[0-9]{6}"
+                inputmode="numeric"
+                placeholder="000000"
+                autocomplete="one-time-code"
+                required
+            >
+            <button type="submit" class="btn-submit">Vérifier →</button>
+        </form>
+        <p style="margin-top:16px; font-size:.8rem; color:var(--text-light);">
+            Vous n'avez pas reçu le code ? <a href="{{ url_for('choose_auth') }}" style="color:var(--primary);">Rechargez la page</a> pour en demander un nouveau.
+        </p>
+    </section>
+
+    <div class="msa-actions">
+        <a href="{{ url_for('choose_auth') }}">← Choisir une autre méthode</a>
+    </div>
+</div>
 </body>
 </html>

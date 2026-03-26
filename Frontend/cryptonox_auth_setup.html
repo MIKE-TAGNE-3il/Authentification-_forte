@@ -2,170 +2,62 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Configuration Carte Cryptonox</title>
+    <title>Carte Cryptonox — AuthForte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="cryptonox-auth-page">
-    <div class="msa-wrapper">
-        <div class="msa-header">
-            <h1>Configurer la carte Cryptonox</h1>
-            <p>Suivez les étapes ci-dessous pour activer l'authentification par carte à puce FIDO2.</p>
-        </div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        <div id="js-status" class="messages" style="display:none;">
-            <div id="js-status-msg" class="flash info"></div>
-        </div>
-
-        <div class="msa-grid">
-            <section class="msa-card">
-                <h2>1. Préparer le matériel</h2>
-                <p>Insérez votre carte <strong>Cryptonox FIDO2</strong> dans le lecteur de cartes connecté à votre poste, puis assurez-vous que le lecteur est bien reconnu par Windows.</p>
-            </section>
-
-            <section class="msa-card">
-                <h2>2. Enregistrer la carte</h2>
-                <p>Cliquez sur le bouton ci-dessous. Windows va ouvrir une invite de sécurité : sélectionnez votre carte Cryptonox et confirmez avec votre PIN si demandé.</p>
-                <div class="msa-form">
-                    <button id="btn-register" class="btn-submit" type="button">
-                        Enregistrer ma carte
-                    </button>
-                </div>
-            </section>
-        </div>
-
-        <div class="msa-actions">
-            <a href="{{ url_for('choose_auth') }}">Retour au choix des méthodes</a>
-        </div>
+<header class="setup-topbar">
+    <a href="{{ url_for('choose_auth') }}" class="back-link">← Retour</a>
+    <span class="topbar-title">💳 Carte Cryptonox FIDO2</span>
+    <span></span>
+</header>
+<div class="msa-wrapper">
+    <div class="msa-header">
+        <div class="page-eyebrow">🔐 Configuration 2FA</div>
+        <h1>Carte Cryptonox</h1>
+        <p>Enregistrez votre carte à puce FIDO2 pour une authentification sans mot de passe.</p>
     </div>
-
-    <script>
-        const btnRegister = document.getElementById('btn-register');
-        const statusBox   = document.getElementById('js-status');
-        const statusMsg   = document.getElementById('js-status-msg');
-
-        function showStatus(msg, type) {
-            statusMsg.textContent = msg;
-            statusMsg.className   = 'flash ' + type;
-            statusBox.style.display = 'block';
-        }
-
-        function bufferToBase64url(buffer) {
-            const bytes = new Uint8Array(buffer);
-            let str = '';
-            bytes.forEach(b => str += String.fromCharCode(b));
-            return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        }
-
-        function base64urlToBuffer(b64url) {
-            const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-            const bin = atob(b64);
-            const buf = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-            return buf.buffer;
-        }
-
-        function friendlyError(err) {
-            const name = err.name || '';
-            const msg  = (err.message || '').toLowerCase();
-            if (name === 'NotAllowedError' || msg.includes('not allowed')) {
-                return 'Opération annulée ou expirée. Réessayez et interagissez avec la carte dans les 60 secondes.';
-            }
-            if (name === 'InvalidStateError') {
-                return 'Cette carte est déjà enregistrée pour ce compte.';
-            }
-            if (name === 'NotSupportedError') {
-                return 'Votre navigateur ne supporte pas WebAuthn. Utilisez Chrome ou Edge.';
-            }
-            if (name === 'SecurityError' || msg.includes('domain') || msg.includes('relying party')) {
-                return 'Domaine invalide. Accédez à l\'application via http://localhost:5000.';
-            }
-            if (name === 'AbortError') {
-                return 'Opération interrompue. Vérifiez que la carte est bien insérée et réessayez.';
-            }
-            if (msg.includes('mute') || msg.includes('not respond')) {
-                return 'La carte ne répond pas. Retirez-la, réinsérez-la et réessayez.';
-            }
-            return 'Erreur inattendue : ' + err.message;
-        }
-
-        btnRegister.addEventListener('click', async () => {
-            btnRegister.disabled = true;
-            showStatus('Récupération du challenge...', 'info');
-
-            try {
-                if (!window.PublicKeyCredential) {
-                    throw Object.assign(new Error(), { name: 'NotSupportedError' });
-                }
-
-                // 1. Obtenir les options depuis le serveur
-                const beginResp = await fetch('/webauthn/register/begin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (!beginResp.ok) {
-                    const err = await beginResp.json();
-                    throw new Error(err.error || 'Erreur serveur');
-                }
-                const options = await beginResp.json();
-
-                // 2. Décoder les champs binaires
-                options.challenge = base64urlToBuffer(options.challenge);
-                options.user.id   = base64urlToBuffer(options.user.id);
-                if (options.excludeCredentials) {
-                    options.excludeCredentials = options.excludeCredentials.map(c => ({
-                        ...c,
-                        id: base64urlToBuffer(c.id)
-                    }));
-                }
-
-                showStatus('Carte détectée — insérez-la et appuyez sur le bouton du lecteur...', 'info');
-
-                // 3. Demander au navigateur / Windows d'utiliser la carte
-                const credential = await navigator.credentials.create({ publicKey: options });
-
-                showStatus('Validation en cours...', 'info');
-
-                // 4. Encoder la réponse et envoyer au serveur
-                const payload = {
-                    id:    credential.id,
-                    rawId: bufferToBase64url(credential.rawId),
-                    type:  credential.type,
-                    response: {
-                        clientDataJSON:    bufferToBase64url(credential.response.clientDataJSON),
-                        attestationObject: bufferToBase64url(credential.response.attestationObject)
-                    }
-                };
-
-                const completeResp = await fetch('/webauthn/register/complete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!completeResp.ok) {
-                    const err = await completeResp.json();
-                    throw new Error(err.error || 'Validation échouée côté serveur.');
-                }
-
-                showStatus('Carte enregistrée avec succès ! Redirection...', 'success');
-                setTimeout(() => { window.location.href = '/webauthn/report'; }, 1500);
-
-            } catch (err) {
-                showStatus(friendlyError(err), 'error');
-                btnRegister.disabled = false;
-            }
-        });
-    </script>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}<div class="messages">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    <div id="js-status" class="messages" style="display:none;"><div id="js-status-msg" class="flash info"></div></div>
+    <div class="msa-grid">
+        <section class="msa-card">
+            <h2><span class="step-num">1</span> Préparer le matériel</h2>
+            <p>Insérez votre carte <strong>Cryptonox FIDO2</strong> dans le lecteur connecté. Vérifiez qu'il est reconnu dans le Gestionnaire de périphériques.</p>
+        </section>
+        <section class="msa-card">
+            <h2><span class="step-num">2</span> Enregistrer la carte</h2>
+            <p>Cliquez ci-dessous. Windows ouvrira une invite — sélectionnez votre carte et entrez votre PIN.</p>
+            <div class="msa-form" style="margin-top:8px;">
+                <button id="btn-register" class="btn-submit" type="button">Enregistrer ma carte</button>
+            </div>
+        </section>
+    </div>
+    <div class="msa-actions"><a href="{{ url_for('choose_auth') }}">← Choisir une autre méthode</a></div>
+</div>
+<script>
+const btnR=document.getElementById('btn-register'),sBox=document.getElementById('js-status'),sMsg=document.getElementById('js-status-msg');
+function show(m,t){sMsg.textContent=m;sMsg.className='flash '+t;sBox.style.display='block';}
+function toB64(b){const u=new Uint8Array(b);let s='';u.forEach(x=>s+=String.fromCharCode(x));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+function fromB64(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),d=atob(b),a=new Uint8Array(d.length);for(let i=0;i<d.length;i++)a[i]=d.charCodeAt(i);return a.buffer;}
+function friendly(e){if(e.name==='NotAllowedError')return 'Annulé ou expiré. Réessayez.';if(e.name==='InvalidStateError')return 'Carte déjà enregistrée.';if(e.name==='NotSupportedError')return 'WebAuthn non supporté. Utilisez Chrome/Edge.';return 'Erreur : '+e.message;}
+btnR.addEventListener('click',async()=>{btnR.disabled=true;show('Connexion au serveur...','info');try{
+    if(!window.PublicKeyCredential)throw Object.assign(new Error(),{name:'NotSupportedError'});
+    const r=await fetch('/webauthn/register/begin',{method:'POST',headers:{'Content-Type':'application/json'}});
+    if(!r.ok){const e=await r.json();throw new Error(e.error||'Erreur serveur');}
+    const o=await r.json();o.challenge=fromB64(o.challenge);o.user.id=fromB64(o.user.id);
+    if(o.excludeCredentials)o.excludeCredentials=o.excludeCredentials.map(c=>({...c,id:fromB64(c.id)}));
+    show('Carte détectée — suivez les instructions Windows...','info');
+    const cred=await navigator.credentials.create({publicKey:o});show('Validation...','info');
+    const p={id:cred.id,rawId:toB64(cred.rawId),type:cred.type,response:{clientDataJSON:toB64(cred.response.clientDataJSON),attestationObject:toB64(cred.response.attestationObject)}};
+    const c=await fetch('/webauthn/register/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    if(!c.ok){const e=await c.json();throw new Error(e.error||'Validation échouée.');}
+    show('Enregistrée ! Redirection...','success');setTimeout(()=>{window.location.href='/webauthn/report';},1500);
+}catch(e){show(friendly(e),'error');btnR.disabled=false;}});
+</script>
 </body>
 </html>

@@ -1,88 +1,51 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>NFC : analyse</title>
+    <meta charset="UTF-8"><title>NFC — Authentification activée</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-report-page">
-    <main class="mar-wrapper">
-        <header class="mar-header">
-            <h1>Authentification NFC activée</h1>
-            <p>Carte enregistrée le {{ now }}. UID détecté : <strong>{{ uid }}</strong></p>
-        </header>
-
-        <section class="mar-grid">
-            <article class="mar-card">
-                <h2>Avantages</h2>
-                <ul>
-                    <li>Authentification sans contact — rapide et intuitive.</li>
-                    <li>Aucun mot de passe à retenir : facteur de possession pur.</li>
-                    <li>Compatible avec les cartes MIFARE, ISO 14443 et la plupart des badges entreprise.</li>
-                    <li>Faible coût matériel — lecteurs USB accessibles dès 10 EUR.</li>
-                    <li>Intégration simple via le standard PC/SC (pyscard).</li>
-                </ul>
-            </article>
-
-            <article class="mar-card">
-                <h2>Limites</h2>
-                <ul>
-                    <li>L'UID d'une carte NFC peut être cloné sur certains types de cartes bas de gamme.</li>
-                    <li>Nécessite un lecteur NFC sur chaque poste de travail.</li>
-                    <li>Perte ou vol de la carte bloque l'accès sans procédure de récupération.</li>
-                    <li>Ne repose que sur la possession — à combiner avec un PIN ou mot de passe.</li>
-                    <li>Portée très courte (~5 cm) : inadapté à certains usages mobiles.</li>
-                </ul>
-            </article>
-        </section>
-
-        <section class="mar-card">
-            <h2>Coût pour une entreprise</h2>
-            <div class="mar-table-wrap">
-                <table class="mar-table">
-                    <thead>
-                        <tr>
-                            <th>Poste</th>
-                            <th>Estimation</th>
-                            <th>Commentaire</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Carte NFC (badge ou carte ISO)</td>
-                            <td>~1 à 5 EUR / carte</td>
-                            <td>Prix unitaire très bas selon le volume.</td>
-                        </tr>
-                        <tr>
-                            <td>Lecteur NFC USB PC/SC</td>
-                            <td>~10 à 30 EUR / poste</td>
-                            <td>Nécessaire sur chaque poste non équipé.</td>
-                        </tr>
-                        <tr>
-                            <td>Intégration technique</td>
-                            <td>1 à 2 jours</td>
-                            <td>Installation pyscard, test lecteurs, intégration backend.</td>
-                        </tr>
-                        <tr>
-                            <td>Support utilisateur</td>
-                            <td>Faible</td>
-                            <td>Gestion des cartes perdues ou volées.</td>
-                        </tr>
-                        <tr>
-                            <td>Formation interne</td>
-                            <td>Très faible</td>
-                            <td>Prise en main immédiate : poser la carte sur le lecteur.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <div class="mar-actions">
-            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
-            <a class="mar-link" href="{{ url_for('logout') }}">Se déconnecter</a>
+<main class="mar-wrapper">
+    <header class="mar-header">
+        <div class="mar-header-icon">✓</div>
+        <div>
+            <h1>Carte NFC authentifiée</h1>
+            <p>Carte <strong>{{ uid }}</strong> vérifiée le {{ now }}.<br>
+            <span style="font-size:.85rem; opacity:.85;">Validité : jusqu'au <strong>{{ expires_at }}</strong> ({{ validity_days }} jours).</span></p>
         </div>
-    </main>
+    </header>
+    <section class="mar-grid">
+        <article class="mar-card"><h2>Avantages</h2><ul>
+            <li>Authentification sans contact — rapide et intuitive.</li>
+            <li>Aucun mot de passe à mémoriser.</li>
+            <li>Compatible MIFARE, ISO 14443 et badges entreprise.</li>
+            <li>Faible coût matériel (~10 € le lecteur USB).</li>
+        </ul></article>
+        <article class="mar-card"><h2>Limites</h2><ul>
+            <li>L'UID d'une carte bas de gamme peut être cloné.</li>
+            <li>Lecteur NFC requis sur chaque poste.</li>
+            <li>Perte de carte = blocage sans récupération.</li>
+            <li>Facteur possession seul — à combiner avec un PIN.</li>
+        </ul></article>
+    </section>
+    <section class="mar-card" style="margin-bottom:16px;"><h2>Coût pour une entreprise</h2>
+        <div class="mar-table-wrap"><table class="mar-table">
+            <thead><tr><th>Poste</th><th>Estimation</th><th>Commentaire</th></tr></thead>
+            <tbody>
+                <tr><td>Carte NFC / badge</td><td>~1 à 5 € / carte</td><td>Prix très bas à grande échelle.</td></tr>
+                <tr><td>Lecteur NFC USB</td><td>~10 à 30 € / poste</td><td>Nécessaire sur chaque machine non équipée.</td></tr>
+                <tr><td>Intégration technique</td><td>1 à 2 jours</td><td>pyscard, tests, backend.</td></tr>
+                <tr><td>Support utilisateur</td><td>Faible</td><td>Gestion des cartes perdues ou volées.</td></tr>
+            </tbody>
+        </table></div>
+    </section>
+    <div class="mar-actions">
+        <a class="mar-link" href="{{ url_for('choose_auth') }}">← Retour aux méthodes</a>
+        <a class="mar-link danger" href="{{ url_for('logout') }}">Se déconnecter</a>
+    </div>
+</main>
 </body>
 </html>

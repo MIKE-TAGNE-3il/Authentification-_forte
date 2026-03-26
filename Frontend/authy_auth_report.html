@@ -1,81 +1,68 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Authy : analyse</title>
+    <title>Authy activé — AuthForte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-report-page">
-    <main class="mar-wrapper">
-        <header class="mar-header">
+<main class="mar-wrapper">
+
+    <header class="mar-header">
+        <div class="mar-header-icon">✓</div>
+        <div>
             <h1>Authy activé</h1>
-            <p>Voici une synthèse utile pour une entreprise : bénéfices, limites et coûts.</p>
-        </header>
-
-        <section class="mar-grid">
-            <article class="mar-card">
-                <h2>Avantages</h2>
-                <ul>
-                    <li>Renforce la sécurité des comptes avec des codes TOTP temporaires.</li>
-                    <li>Application simple à utiliser pour les équipes non techniques.</li>
-                    <li>Support multi-appareils selon la configuration utilisateur.</li>
-                    <li>Réduction du risque lié au vol de mot de passe.</li>
-                </ul>
-            </article>
-
-            <article class="mar-card">
-                <h2>Limites</h2>
-                <ul>
-                    <li>Dépendance au smartphone et à la disponibilité de l'application.</li>
-                    <li>Risque de blocage en cas de perte d'appareil sans procédure de secours.</li>
-                    <li>Les codes OTP restent exposés au phishing en temps réel.</li>
-                    <li>Une étape de connexion supplémentaire peut ralentir l'expérience utilisateur.</li>
-                </ul>
-            </article>
-        </section>
-
-        <section class="mar-card">
-            <h2>Coût pour une entreprise</h2>
-            <div class="mar-table-wrap">
-                <table class="mar-table">
-                    <thead>
-                        <tr>
-                            <th>Poste</th>
-                            <th>Estimation</th>
-                            <th>Commentaire</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Licence application</td>
-                            <td>Faible à modéré</td>
-                            <td>Selon le mode de déploiement et les besoins de l'entreprise.</td>
-                        </tr>
-                        <tr>
-                            <td>Intégration technique</td>
-                            <td>1 à 4 jours</td>
-                            <td>Configuration backend, tests OTP et écrans d'enrôlement.</td>
-                        </tr>
-                        <tr>
-                            <td>Support utilisateur</td>
-                            <td>Variable</td>
-                            <td>Onboarding, changement d'appareil et récupération de compte.</td>
-                        </tr>
-                        <tr>
-                            <td>Formation interne</td>
-                            <td>Faible</td>
-                            <td>Guide d'activation et bonnes pratiques anti-phishing.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <div class="mar-actions">
-            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
-            <a class="mar-link" href="{{ url_for('logout') }}">Se déconnecter</a>
+            <p>Authentification à deux facteurs configurée avec succès. Voici une synthèse pour votre entreprise.</p>
         </div>
-    </main>
+    </header>
+
+    <section class="mar-grid">
+        <article class="mar-card">
+            <h2>Avantages</h2>
+            <ul>
+                <li>Sauvegarde chiffrée dans le cloud.</li>
+                <li>Synchronisation multi-appareils.</li>
+                <li>Application gratuite et conviviale.</li>
+                <li>Fonctionne hors ligne une fois configuré.</li>
+            </ul>
+        </article>
+        <article class="mar-card">
+            <h2>Limites</h2>
+            <ul>
+                <li>Dépendance à un service tiers (Twilio).</li>
+                <li>La synchronisation cloud est une surface d'attaque.</li>
+                <li>Codes OTP vulnérables au phishing en temps réel.</li>
+                <li>Compte Authy requis.</li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="mar-card" style="margin-bottom:16px;">
+        <h2>Coût pour une entreprise</h2>
+        <div class="mar-table-wrap">
+            <table class="mar-table">
+                <thead>
+                    <tr><th>Poste</th><th>Estimation</th><th>Commentaire</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Licence application</td><td>0 € / utilisateur</td><td>Application entièrement gratuite.</td></tr>
+                    <tr><td>Mise en place IT</td><td>1 à 3 jours</td><td>Configuration des politiques MFA et tests.</td></tr>
+                    <tr><td>Support utilisateur</td><td>Variable</td><td>Principal coût : onboarding et récupération.</td></tr>
+                    <tr><td>Formation interne</td><td>Faible</td><td>Guide court + communication sécurité.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="mar-actions">
+        <a class="mar-link" href="{{ url_for('choose_auth') }}">← Retour aux méthodes</a>
+        <a class="mar-link danger" href="{{ url_for('logout') }}">Se déconnecter</a>
+    </div>
+
+</main>
 </body>
 </html>
