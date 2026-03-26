@@ -153,7 +153,7 @@ def register():
                     return render_template("register.html")
 
                 cursor.execute(
-                    "INSERT INTO users (nom, email, password) VALUES (%s, %s, %s)",
+                    "INSERT INTO users (nom, email, password, createdAt) VALUES (%s, %s, %s, NOW())",
                     (nom, email, hashed_pw.decode("utf-8"))
                 )
             conn.close()
