@@ -1,10 +1,11 @@
-from flask import Flask, request, render_template, flash, redirect, url_for, session
-from dotenv import load_dotenv
-load_dotenv()
+from flask import Flask, request, render_template, flash, redirect, url_for, session, Response
 import pymysql
 import os
-import time
 import bcrypt
+import traceback
+from dotenv import load_dotenv
+
+# --- IMPORTS AUTHENTICATEURS TOTP (Microsoft, Google, Authy, FreeOTP) ---
 try:
     from microsoft_authenticator import (
         build_otpauth_uri,
@@ -61,6 +62,8 @@ except ImportError:
         generate_totp_secret as generate_freeotp_totp_secret,
         verify_totp as verify_freeotp_totp,
     )
+
+# --- IMPORTS BLUEPRINTS (Cryptonox, NFC) ---
 try:
     from cryptonox_authenticator import cryptonox_auth_bp, init_webauthn_table
 except ImportError:
@@ -71,13 +74,13 @@ try:
 except ImportError:
     from Backend.nfc_authenticator import nfc_auth_bp
 
-# email authentication blueprint (moved out of app)
-try:
-    from mail_authenticator import email_auth_bp
-except ImportError:
-    from Backend.mail_authenticator import email_auth_bp
+# --- IMPORTS WEBAUTHN (v2.7.1) ---
+from webauthn_handler import get_registration_options, verify_registration
+from webauthn.helpers import options_to_json
 
+load_dotenv()
 
+# Configuration des chemins pour le Frontend et le Static
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
 
@@ -92,9 +95,10 @@ app.register_blueprint(cryptonox_auth_bp)
 app.register_blueprint(nfc_auth_bp)
 app.register_blueprint(email_auth_bp)
 
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-in-production")
+# Clé secrète depuis le fichier .env
+app.secret_key = os.getenv("SECRET_KEY", "436f9c8e7a1b5d3f2a8c6e4d9b7a1c3e5f8a2d4b6c0e9f7a3c1e5d8b2a4f6c0e")
 
-
+# --- CONNEXION BASE DE DONNÉES ---
 def get_connection():
     return pymysql.connect(
         host=os.getenv("DB_HOST", "localhost"),
@@ -102,9 +106,8 @@ def get_connection():
         password=os.getenv("DB_PASSWORD", ""),
         database=os.getenv("DB_NAME", "authentification"),
         port=int(os.getenv("DB_PORT", "3306")),
-        charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor,
-        autocommit=False,
+        autocommit=True
     )
 
 
@@ -127,7 +130,7 @@ def init_database_schema():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
             """
         )
-        # Corrige les anciennes bases ou id n'etait pas AUTO_INCREMENT.
+        # Corrige les anciennes bases où id n'était pas AUTO_INCREMENT
         cursor.execute(
             """
             ALTER TABLE users
@@ -145,69 +148,11 @@ def init_database_schema():
 init_database_schema()
 init_webauthn_table()
 
+# --- ROUTES D'AUTHENTIFICATION CLASSIQUE ---
 
 @app.route("/")
 def home():
     return redirect(url_for("login"))
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        nom = request.form.get("nom", "").strip()
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "")
-        confirm_password = request.form.get("confirm", "")
-
-        if not nom or not email or not password or not confirm_password:
-            flash("Tous les champs sont requis.", "error")
-            return render_template("register.html")
-
-        if password != confirm_password:
-            flash("Les mots de passe ne correspondent pas.", "error")
-            return render_template("register.html")
-
-        hashed_password = bcrypt.hashpw(
-            password.encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
-
-        conn = None
-        cursor = None
-        try:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO users (nom, email, password, createdAt)
-                VALUES (%s, %s, %s, NOW())
-                """,
-                (nom, email, hashed_password),
-            )
-            conn.commit()
-            flash("Inscription reussie. Vous pouvez vous connecter.", "success")
-            return redirect(url_for("login"))
-        except pymysql.err.IntegrityError as exc:
-            if conn:
-                conn.rollback()
-            mysql_error_code = exc.args[0] if exc.args else None
-            if mysql_error_code == 1062:
-                flash("Cet email est deja utilise.", "error")
-            else:
-                flash("Erreur d'integrite de la base de donnees.", "error")
-            return render_template("register.html")
-        except Exception:
-            if conn:
-                conn.rollback()
-            flash("Erreur serveur pendant l'inscription.", "error")
-            return render_template("register.html")
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
-
-    return render_template("register.html")
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -215,57 +160,55 @@ def login():
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
 
-        if not email or not password:
-            flash("Email et mot de passe requis.", "error")
-            return render_template("login.html")
-
-        conn = None
-        cursor = None
-        try:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT id, nom, email, password FROM users WHERE email = %s",
-                (email,),
-            )
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
             user = cursor.fetchone()
-        except Exception:
-            flash("Erreur serveur pendant la connexion.", "error")
-            return render_template("login.html")
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
+        conn.close()
 
-        if not user:
-            flash("Identifiants invalides.", "error")
-            return render_template("login.html")
+        if user and bcrypt.checkpw(password.encode("utf-8"), user["password"].encode("utf-8")):
+            session["user_id"] = user["id"]
+            session["user_name"] = user["nom"]
+            return redirect(url_for("choose_auth"))
 
-        if not bcrypt.checkpw(password.encode("utf-8"), user["password"].encode("utf-8")):
-            flash("Identifiants invalides.", "error")
-            return render_template("login.html")
-
-        session["user_id"] = user["id"]
-        session["user_name"] = user["nom"]
-        session["user_email"] = user.get("email")  # nécessaire pour la 2FA par e-mail
-        return redirect(url_for("choose_auth"))
-
+        flash("Identifiants incorrects.", "danger")
     return render_template("login.html")
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        nom = request.form.get("nom")
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password")
+
+        hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+
+        try:
+            conn = get_connection()
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    flash("Cet email est déjà utilisé.", "danger")
+                    return render_template("register.html")
+
+                cursor.execute(
+                    "INSERT INTO users (nom, email, password) VALUES (%s, %s, %s)",
+                    (nom, email, hashed_pw.decode("utf-8"))
+                )
+            conn.close()
+            flash("Compte créé avec succès ! Connectez-vous.", "success")
+            return redirect(url_for("login"))
+
+        except Exception as e:
+            flash(f"Erreur lors de l'inscription : {e}", "danger")
+
+    return render_template("register.html")
 
 @app.route("/choose-auth")
 def choose_auth():
     if "user_id" not in session:
         return redirect(url_for("login"))
     return render_template("choosAuth.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
 
 @app.route("/select-auth-method", methods=["POST"])
 def select_auth_method():
@@ -297,6 +240,74 @@ def select_auth_method():
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
 
+# --- BIOMÉTRIE WEBAUTHN (v2.7.1) ---
+
+@app.route("/webauthn/register/options")
+def webauthn_register_options():
+    if "user_id" not in session:
+        return {"error": "Session expirée"}, 401
+
+    try:
+        user_id_bytes = str(session["user_id"]).encode('utf-8')
+        user_name = session["user_name"]
+
+        options = get_registration_options(user_id_bytes, user_name)
+
+        session["webauthn_challenge"] = options.challenge.hex()
+
+        return Response(options_to_json(options), mimetype='application/json')
+
+    except Exception as e:
+        print("\n!!! ERREUR CRITIQUE DANS WEBAUTHN OPTIONS !!!")
+        traceback.print_exc()
+        return {"error": str(e)}, 500
+
+@app.route("/webauthn/register/verify", methods=["POST"])
+def webauthn_register_verify():
+    challenge_hex = session.get("webauthn_challenge", "")
+    if not challenge_hex:
+        return {"status": "error", "message": "Challenge manquant"}, 400
+
+    challenge = bytes.fromhex(challenge_hex)
+    registration_data = request.get_json()
+
+    try:
+        verification = verify_registration(registration_data, challenge)
+
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """UPDATE users SET
+                   webauthn_credential_id=%s,
+                   webauthn_public_key=%s
+                   WHERE id=%s""",
+                (verification.credential_id, verification.credential_public_key, session["user_id"])
+            )
+        conn.close()
+
+        session["auth_verified"] = True
+        return {"status": "ok"}
+
+    except Exception as e:
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}, 400
+
+# --- FIN ET DÉCONNEXION ---
+
+@app.route("/auth-success")
+def auth_success():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    if not session.get("auth_verified") and not session.get("microsoft_auth_verified"):
+        return redirect(url_for("choose_auth"))
+    return render_template("auth_success.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+# --- MICROSOFT AUTHENTICATOR ---
 
 @app.route("/microsoft-auth/setup", methods=["GET", "POST"])
 def microsoft_auth_setup():
@@ -340,6 +351,7 @@ def microsoft_auth_report():
         return redirect(url_for("microsoft_auth_setup"))
     return render_template("microsoft_auth_report.html")
 
+# --- GOOGLE AUTHENTICATOR ---
 
 @app.route("/google-auth/setup", methods=["GET", "POST"])
 def google_auth_setup():
@@ -385,6 +397,7 @@ def google_auth_report():
         return redirect(url_for("google_auth_setup"))
     return render_template("google_auth_report.html")
 
+# --- AUTHY AUTHENTICATOR ---
 
 @app.route("/authy-auth/setup", methods=["GET", "POST"])
 def authy_auth_setup():
@@ -430,6 +443,7 @@ def authy_auth_report():
         return redirect(url_for("authy_auth_setup"))
     return render_template("authy_auth_report.html")
 
+# --- FREEOTP AUTHENTICATOR ---
 
 @app.route("/freeotp-auth/setup", methods=["GET", "POST"])
 def freeotp_auth_setup():
@@ -476,7 +490,8 @@ def freeotp_auth_report():
     return render_template("freeotp_auth_report.html")
 
 
-# --- authentification par e-mail ------------------------------------------------
+# --- AUTHENTIFICATION PAR E-MAIL (blueprint à enregistrer séparément) ---
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)

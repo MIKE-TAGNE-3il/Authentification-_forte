@@ -97,6 +97,16 @@
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
+
+            <label class="auth-card" id="webauthn-option" style="cursor:pointer;">
+                <input type="radio" name="auth_method" value="webauthn">
+                <div class="icon-box"><i data-lucide="fingerprint"></i></div>
+                <div class="auth-content">
+                    <span class="auth-title">Empreinte Digitale</span>
+                    <span class="auth-desc">Authentification biométrique locale sécurisée.</span>
+                </div>
+                <i data-lucide="check-circle-2" class="check-badge"></i>
+            </label>
         </div>
 
         <div class="submit-container">
@@ -105,9 +115,29 @@
     </form>
 </div>
 
+<script src="{{ url_for('static', filename='webauthn.js') }}"></script>
+
 <script>
     lucide.createIcons();
-</script>
 
+    document.querySelector('form').addEventListener('submit', async function(e) {
+        const selectedMethod = document.querySelector('input[name="auth_method"]:checked').value;
+        
+        if (selectedMethod === 'webauthn') {
+            e.preventDefault(); 
+            // On vérifie si la fonction existe avant de l'appeler
+            if (typeof registerFingerprint === "function") {
+                try {
+                    await registerFingerprint();
+                } catch (err) {
+                    console.error(err);
+                    alert("Erreur lors du scan : " + err.message);
+                }
+            } else {
+                alert("Le script d'empreinte n'a pas pu être chargé. Vérifiez la console (F12).");
+            }
+        }
+    });
+</script>
 </body>
 </html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Succès - Authentification Forte</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="microsoft-auth-report-page">
+    <main class="mar-wrapper">
+        <header class="mar-header">
+            <h1 style="color: #145c3e;">✓ Authentification Réussie</h1>
+            <p>Félicitations <strong>{{ session['user_name'] }}</strong>, votre identité a été vérifiée avec succès.</p>
+        </header>
+
+        <section class="mar-grid">
+            <article class="mar-card">
+                <h2>Méthode utilisée</h2>
+                <p><strong>Empreinte Digitale / Biométrie</strong></p>
+                <p>Cette méthode repose sur la possession d'un capteur physique et l'unicité de vos traits biologiques.</p>
+            </article>
+
+            <article class="mar-card">
+                <h2>Statut de sécurité</h2>
+                <ul>
+                    <li>Niveau de confiance : <strong>Élevé</strong></li>
+                    <li>Chiffrement de session : <strong>Activé</strong></li>
+                    <li>Origine de la connexion : <strong>Vérifiée</strong></li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="mar-card">
+            <h2>Note pédagogique</h2>
+            <p>L'authentification biométrique est une forme d'authentification forte car elle combine souvent <strong>ce que vous êtes</strong> (empreinte) avec <strong>ce que vous possédez</strong> (votre appareil déverrouillé).</p>
+        </section>
+
+        <div class="mar-actions">
+            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
+            <a class="mar-link" href="{{ url_for('logout') }}" style="color: #b30000; border-color: #b30000;">Se déconnecter</a>
+        </div>
+    </main>
+</body>
+</html>
