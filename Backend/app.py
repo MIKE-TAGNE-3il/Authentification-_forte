@@ -7,7 +7,6 @@ import bcrypt
 import logging
 
 
-# --- IMPORT TOTP GÉNÉRIQUE (remplace les 4 imports redondants) ---
 try:
     from totp_core import TOTP_CONFIGS, generate_totp_secret, build_otpauth_uri, build_qr_code_url, verify_totp
 except ImportError:
@@ -36,7 +35,6 @@ try:
 except ImportError:
     from Backend.mail_authenticator import email_auth_bp
 
-# --- IMPORTS WEBAUTHN (v2.7.1) ---
 from webauthn_handler import get_registration_options, verify_registration
 from webauthn.helpers import options_to_json
 
@@ -107,7 +105,6 @@ def init_database_schema():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
             """
         )
-        # Corrige les anciennes bases où id n'était pas AUTO_INCREMENT
         cursor.execute(
             """
             ALTER TABLE users
@@ -126,7 +123,6 @@ init_database_schema()
 init_webauthn_table()
 init_nfc_table()
 
-# --- ROUTES D'AUTHENTIFICATION CLASSIQUE ---
 
 @app.route("/")
 def home():
@@ -214,7 +210,6 @@ def select_auth_method():
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
 
-# --- BIOMÉTRIE WEBAUTHN (v2.7.1) ---
 
 @app.route("/webauthn/register/options")
 def webauthn_register_options():
@@ -265,7 +260,6 @@ def webauthn_register_verify():
         logger.exception("Échec vérification WebAuthn (user_id=%s)", session.get("user_id"))
         return {"status": "error", "message": "Échec de la vérification biométrique."}, 400
 
-# --- FIN ET DÉCONNEXION ---
 
 @app.route("/auth-success")
 def auth_success():
