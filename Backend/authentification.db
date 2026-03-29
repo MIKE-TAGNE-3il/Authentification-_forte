@@ -64,6 +64,42 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Structure de la table `yubikey`
+--
+
+CREATE TABLE IF NOT EXISTS `yubikey` (
+    `id`           INT(100)     NOT NULL AUTO_INCREMENT,
+    `userId`       INT(100)     NOT NULL,
+    `credentialId` BLOB         NOT NULL,
+    `publicKey`    BLOB         NOT NULL,
+    `signCount`    INT UNSIGNED NOT NULL DEFAULT 0,
+    `label`        VARCHAR(255) DEFAULT NULL,
+    `createdAt`    DATETIME     NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_credential` (`credentialId`(128)),
+    KEY `idx_userId` (`userId`),
+    CONSTRAINT `fk_yubikey_user`
+        FOREIGN KEY (`userId`)
+        REFERENCES `users` (`id`)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE OR REPLACE VIEW `v_user_yubikeys` AS
+SELECT
+    u.id          AS userId,
+    u.nom         AS userName,
+    u.email       AS userEmail,
+    yk.id         AS keyId,
+    yk.label      AS keyLabel,
+    yk.signCount  AS signCount,
+    yk.createdAt  AS registeredAt
+FROM users u
+JOIN yubikey yk ON yk.userId = u.id
+ORDER BY u.id, yk.createdAt;
+
+--
 -- Index pour les tables déchargées
 --
 

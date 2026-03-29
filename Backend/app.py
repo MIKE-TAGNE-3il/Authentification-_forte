@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, flash, redirect, url_for, session
+from flask import Flask, request, render_template, flash, redirect, url_for, session, json
 from dotenv import load_dotenv
 load_dotenv()
 import pymysql
@@ -67,6 +67,24 @@ try:
     from mail_authenticator import email_auth_bp
 except ImportError:
     from Backend.mail_authenticator import email_auth_bp
+
+
+try:
+    from yubikey_authenticator import (
+        begin_registration,
+        complete_registration,
+        begin_authentication,
+        complete_authentication,
+        b64url_encode,
+    )
+except ImportError:
+    from Backend.yubikey_authenticator import (
+        begin_registration,
+        complete_registration,
+        begin_authentication,
+        complete_authentication,
+        b64url_encode,
+    )
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -278,6 +296,8 @@ def select_auth_method():
         return redirect(url_for("freeotp_auth_setup"))
     if selected_method == "email":
         return redirect(url_for("email_auth_bp.email_auth_setup"))
+    if selected_method == "yubikey":
+        return redirect(url_for("yubikey_setup"))
 
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
@@ -461,6 +481,237 @@ def freeotp_auth_report():
     return render_template("freeotp_auth_report.html")
 
 
+def _get_yubikey_credentials(user_id: int) -> list[dict]:
+    """Retourne la liste des credentials enregistrées pour cet utilisateur."""
+    conn = cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT credentialId, publicKey, signCount FROM yubikey WHERE userId = %s",
+            (user_id,),
+        )
+        rows = cursor.fetchall()
+        return [
+            {
+                "credential_id": bytes(row["credentialId"]),
+                "public_key": bytes(row["publicKey"]),
+                "sign_count": row["signCount"],
+            }
+            for row in rows
+        ]
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  PAGE D'ACCUEIL  —  choix enregistrement vs authentification
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/yubikey/setup")
+def yubikey_setup():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("yubikey_setup.html")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ENREGISTREMENT  —  begin  (renvoie le challenge JSON au navigateur)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/yubikey/register/begin", methods=["POST"])
+def yubikey_register_begin():
+    """
+    Étape 1 : génère et stocke un challenge d'enregistrement.
+    Le frontend appelle cette route en AJAX (fetch POST).
+    """
+    if "user_id" not in session:
+        return {"error": "Non authentifié"}, 401
+
+    options_json, state = begin_registration(
+        user_id=session["user_id"],
+        user_name=session.get("user_name", "utilisateur"),
+        user_email=session.get("user_email", ""),
+    )
+
+    # Le state contient le challenge ; on le sérialise en session Flask.
+    # fido2 renvoie un dict avec une clé "challenge" en bytes → on encode.
+    session["yubikey_register_state"] = {
+        "challenge": b64url_encode(state["challenge"]),
+        # fido2 >= 1.x stocke aussi user_verification dans state
+        "user_verification": state.get("user_verification", "preferred"),
+    }
+
+    return options_json  # Flask sérialise automatiquement le dict en JSON
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ENREGISTREMENT  —  complete  (vérifie la réponse de la YubiKey)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/yubikey/register/complete", methods=["POST"])
+def yubikey_register_complete():
+    """
+    Étape 2 : vérifie l'attestation et persiste la credential en base.
+    """
+    if "user_id" not in session:
+        return {"error": "Non authentifié"}, 401
+
+    state = session.pop("yubikey_register_state", None)
+    if not state:
+        return {"error": "Pas de challenge d'enregistrement actif"}, 400
+
+    # Restaure le state au format attendu par fido2
+    from yubikey_authenticator import b64url_decode  # noqa: local import ok ici
+    state["challenge"] = b64url_decode(state["challenge"])
+
+    data = request.get_json(force=True)
+    try:
+        result = complete_registration(
+            state=state,
+            client_data_json_b64=data["clientDataJSON"],
+            attestation_object_b64=data["attestationObject"],
+        )
+    except Exception as exc:
+        return {"error": f"Échec de l'enregistrement : {exc}"}, 400
+
+    # Persiste la credential en base de données
+    conn = cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO yubikey (userId, credentialId, publicKey, signCount, createdAt)
+            VALUES (%s, %s, %s, %s, NOW())
+            """,
+            (
+                session["user_id"],
+                result["credential_id"],   # bytes → BLOB
+                result["public_key"],      # bytes → BLOB
+                result["sign_count"],
+            ),
+        )
+        conn.commit()
+    except Exception as exc:
+        if conn:
+            conn.rollback()
+        return {"error": f"Erreur base de données : {exc}"}, 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    session["yubikey_registered"] = True
+    return {"status": "ok", "message": "YubiKey enregistrée avec succès"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AUTHENTIFICATION  —  begin
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/yubikey/login/begin", methods=["POST"])
+def yubikey_login_begin():
+    """
+    Étape 1 : génère un challenge d'authentification pour les credentials
+    connues de l'utilisateur connecté (session intermédiaire après login).
+    """
+    if "user_id" not in session:
+        return {"error": "Non authentifié"}, 401
+
+    credentials = _get_yubikey_credentials(session["user_id"])
+    if not credentials:
+        return {"error": "Aucune YubiKey enregistrée pour ce compte"}, 404
+
+    options_json, state = begin_authentication(credentials)
+
+    session["yubikey_auth_state"] = {
+        "challenge": b64url_encode(state["challenge"]),
+        "user_verification": state.get("user_verification", "preferred"),
+    }
+
+    return options_json
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AUTHENTIFICATION  —  complete
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/yubikey/login/complete", methods=["POST"])
+def yubikey_login_complete():
+    """
+    Étape 2 : vérifie la signature et met à jour le signCount.
+    """
+    if "user_id" not in session:
+        return {"error": "Non authentifié"}, 401
+
+    state = session.pop("yubikey_auth_state", None)
+    if not state:
+        return {"error": "Pas de challenge d'authentification actif"}, 400
+
+    from yubikey_authenticator import b64url_decode  # noqa
+    state["challenge"] = b64url_decode(state["challenge"])
+
+    credentials = _get_yubikey_credentials(session["user_id"])
+    if not credentials:
+        return {"error": "Aucune YubiKey enregistrée"}, 404
+
+    data = request.get_json(force=True)
+    try:
+        result = complete_authentication(
+            state=state,
+            credentials=credentials,
+            credential_id_b64=data["id"],
+            client_data_json_b64=data["clientDataJSON"],
+            authenticator_data_b64=data["authenticatorData"],
+            signature_b64=data["signature"],
+        )
+    except Exception as exc:
+        return {"error": f"Échec de l'authentification : {exc}"}, 401
+
+    # Met à jour le signCount en base (protection contre le clonage)
+    conn = cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE yubikey SET signCount = %s
+            WHERE userId = %s AND credentialId = %s
+            """,
+            (
+                result["new_sign_count"],
+                session["user_id"],
+                result["credential_id"],
+            ),
+        )
+        conn.commit()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    session["yubikey_auth_verified"] = True
+    return {"status": "ok", "redirect": "/yubikey/report"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  RAPPORT  (page de confirmation, même pattern que les autres modules)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/yubikey/report")
+def yubikey_report():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    if not session.get("yubikey_registered") and not session.get("yubikey_auth_verified"):
+        flash("Veuillez d'abord enregistrer ou authentifier votre YubiKey.", "error")
+        return redirect(url_for("yubikey_setup"))
+    return render_template("yubikey_report.html")
 # --- authentification par e-mail ------------------------------------------------
 
 if __name__ == "__main__":

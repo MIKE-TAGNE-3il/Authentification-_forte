@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuration YubiKey</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="microsoft-auth-page">
+    <div class="msa-wrapper">
+        <div class="msa-header">
+            <h1>Configurer votre YubiKey</h1>
+            <p>Enregistrez votre clé matérielle pour une authentification sans mot de passe.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Message d'état affiché dynamiquement par le JS -->
+        <div id="yk-status" class="flash" style="display:none;"></div>
+
+        <div class="msa-grid">
+            <!-- ENREGISTREMENT -->
+            <section class="msa-card">
+                <h2>1. Enregistrer la YubiKey</h2>
+                <p>
+                    Branchez votre YubiKey, puis cliquez sur le bouton.
+                    Lorsque la LED clignote, <strong>touchez la clé</strong>.
+                </p>
+                <button id="btn-register" class="btn-submit">
+                    Enregistrer ma YubiKey
+                </button>
+            </section>
+
+            <!-- AUTHENTIFICATION (test immédiat après enregistrement) -->
+            <section class="msa-card">
+                <h2>2. Tester l'authentification</h2>
+                <p>
+                    Une fois enregistrée, vérifiez que la clé fonctionne
+                    en cliquant ci-dessous et en touchant à nouveau la clé.
+                </p>
+                <button id="btn-login" class="btn-submit" disabled>
+                    S'authentifier avec la YubiKey
+                </button>
+            </section>
+        </div>
+
+        <div class="msa-actions">
+            <a href="{{ url_for('choose_auth') }}">Retour au choix des méthodes</a>
+        </div>
+    </div>
+
+<script>
+/* ===========================================================================
+   Helpers Base64URL
+   WebAuthn échange des ArrayBuffer ; les routes Flask attendent du Base64URL.
+   =========================================================================== */
+
+/** ArrayBuffer → Base64URL sans padding */
+function bufferToBase64url(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (const b of bytes) binary += String.fromCharCode(b);
+    return btoa(binary)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+}
+
+/** Base64URL → ArrayBuffer */
+function base64urlToBuffer(b64url) {
+    let s = b64url.replace(/-/g, "+").replace(/_/g, "/");
+    while (s.length % 4) s += "=";
+    const binary = atob(s);
+    const buf = new ArrayBuffer(binary.length);
+    const view = new Uint8Array(buf);
+    for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
+    return buf;
+}
+
+/* ===========================================================================
+   Affichage des messages d'état
+   =========================================================================== */
+function showStatus(msg, type = "info") {
+    const el = document.getElementById("yk-status");
+    el.textContent = msg;
+    el.className = `flash ${type}`;
+    el.style.display = "block";
+}
+
+/* ===========================================================================
+   ENREGISTREMENT
+   1. /yubikey/register/begin  → récupère les options du serveur
+   2. navigator.credentials.create() → YubiKey génère une clé
+   3. /yubikey/register/complete → serveur vérifie et persiste
+   =========================================================================== */
+document.getElementById("btn-register").addEventListener("click", async () => {
+    const btnReg = document.getElementById("btn-register");
+    btnReg.disabled = true;
+    showStatus("Initialisation de l'enregistrement…", "info");
+
+    try {
+        /* ── Étape 1 : récupérer les options du serveur ── */
+        const optRes = await fetch("/yubikey/register/begin", { method: "POST" });
+        if (!optRes.ok) {
+            const err = await optRes.json();
+            throw new Error(err.error || "Erreur serveur (begin)");
+        }
+        const options = await optRes.json();
+
+        /* ── Préparer l'objet PublicKeyCredentialCreationOptions ── */
+        const createOptions = {
+            publicKey: {
+                challenge: base64urlToBuffer(options.challenge),
+                rp: options.rp,
+                user: {
+                    id: base64urlToBuffer(options.user.id),
+                    name: options.user.name,
+                    displayName: options.user.displayName,
+                },
+                pubKeyCredParams: options.pubKeyCredParams,
+                timeout: options.timeout,
+                excludeCredentials: (options.excludeCredentials || []).map(c => ({
+                    type: c.type,
+                    id: base64urlToBuffer(c.id),
+                    transports: c.transports,
+                })),
+                authenticatorSelection: options.authenticatorSelection,
+                attestation: options.attestation,
+            }
+        };
+
+        showStatus("Veuillez toucher votre YubiKey lorsque la LED clignote…", "info");
+
+        /* ── Étape 2 : browser ↔ YubiKey ── */
+        const credential = await navigator.credentials.create(createOptions);
+
+        /* ── Étape 3 : envoyer la réponse au serveur ── */
+        const payload = {
+            id:                bufferToBase64url(credential.rawId),
+            clientDataJSON:    bufferToBase64url(credential.response.clientDataJSON),
+            attestationObject: bufferToBase64url(credential.response.attestationObject),
+        };
+
+        const verRes = await fetch("/yubikey/register/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        const verData = await verRes.json();
+
+        if (!verRes.ok) throw new Error(verData.error || "Erreur serveur (complete)");
+
+        showStatus("✅ YubiKey enregistrée avec succès !", "success");
+        document.getElementById("btn-login").disabled = false;
+
+    } catch (err) {
+        showStatus(`❌ Erreur : ${err.message}`, "error");
+        btnReg.disabled = false;
+    }
+});
+
+/* ===========================================================================
+   AUTHENTIFICATION
+   1. /yubikey/login/begin  → récupère les options du serveur
+   2. navigator.credentials.get() → YubiKey signe le challenge
+   3. /yubikey/login/complete → serveur vérifie et redirige
+   =========================================================================== */
+document.getElementById("btn-login").addEventListener("click", async () => {
+    const btnLogin = document.getElementById("btn-login");
+    btnLogin.disabled = true;
+    showStatus("Initialisation de l'authentification…", "info");
+
+    try {
+        /* ── Étape 1 : récupérer les options du serveur ── */
+        const optRes = await fetch("/yubikey/login/begin", { method: "POST" });
+        if (!optRes.ok) {
+            const err = await optRes.json();
+            throw new Error(err.error || "Erreur serveur (begin)");
+        }
+        const options = await optRes.json();
+
+        /* ── Préparer l'objet PublicKeyCredentialRequestOptions ── */
+        const getOptions = {
+            publicKey: {
+                challenge: base64urlToBuffer(options.challenge),
+                timeout: options.timeout,
+                rpId: options.rpId,
+                allowCredentials: (options.allowCredentials || []).map(c => ({
+                    type: c.type,
+                    id: base64urlToBuffer(c.id),
+                    transports: c.transports,
+                })),
+                userVerification: options.userVerification,
+            }
+        };
+
+        showStatus("Veuillez toucher votre YubiKey lorsque la LED clignote…", "info");
+
+        /* ── Étape 2 : browser ↔ YubiKey ── */
+        const assertion = await navigator.credentials.get(getOptions);
+
+        /* ── Étape 3 : envoyer la réponse au serveur ── */
+        const payload = {
+            id:                bufferToBase64url(assertion.rawId),
+            clientDataJSON:    bufferToBase64url(assertion.response.clientDataJSON),
+            authenticatorData: bufferToBase64url(assertion.response.authenticatorData),
+            signature:         bufferToBase64url(assertion.response.signature),
+        };
+
+        const verRes = await fetch("/yubikey/login/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        const verData = await verRes.json();
+
+        if (!verRes.ok) throw new Error(verData.error || "Erreur serveur (complete)");
+
+        showStatus("✅ Authentification réussie ! Redirection…", "success");
+        setTimeout(() => { window.location.href = verData.redirect; }, 1000);
+
+    } catch (err) {
+        showStatus(`❌ Erreur : ${err.message}`, "error");
+        btnLogin.disabled = false;
+    }
+});
+</script>
+</body>
+</html>

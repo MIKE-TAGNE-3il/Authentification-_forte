@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>YubiKey : analyse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="microsoft-auth-report-page">
+    <main class="mar-wrapper">
+        <header class="mar-header">
+            <h1>YubiKey (WebAuthn / FIDO2) activée</h1>
+            <p>Voici une synthèse pour une entreprise : bénéfices, limites et coûts.</p>
+        </header>
+
+        <section class="mar-grid">
+            <article class="mar-card">
+                <h2>Avantages</h2>
+                <ul>
+                    <li>Résistante au phishing : le domaine est cryptographiquement lié à la clé.</li>
+                    <li>Authentification matérielle — impossible à reproduire à distance.</li>
+                    <li>Support natif dans les navigateurs modernes (Chrome, Firefox, Edge, Safari).</li>
+                    <li>Compatible Passwordless : supprime totalement le mot de passe si souhaité.</li>
+                    <li>Le signCount détecte les tentatives de clonage de clé.</li>
+                    <li>Conforme aux normes NIST SP 800-63B (AAL3) et eIDAS.</li>
+                </ul>
+            </article>
+
+            <article class="mar-card">
+                <h2>Limites</h2>
+                <ul>
+                    <li>Dépendance à un objet physique : risque de perte ou de vol.</li>
+                    <li>Coût unitaire non nul (10 – 60 € / clé selon le modèle).</li>
+                    <li>Nécessite USB ou NFC sur les appareils mobiles.</li>
+                    <li>Récupération de compte à prévoir (clé de secours ou procédure admin).</li>
+                    <li>Pas compatible avec les navigateurs anciens ou certains contextes embarqués.</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="mar-card">
+            <h2>Coût pour une entreprise</h2>
+            <div class="mar-table-wrap">
+                <table class="mar-table">
+                    <thead>
+                        <tr>
+                            <th>Poste</th>
+                            <th>Estimation</th>
+                            <th>Commentaire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Matériel (YubiKey 5 NFC)</td>
+                            <td>~55 € / clé</td>
+                            <td>Prix public unitaire. Tarifs dégressifs dès 500 clés.</td>
+                        </tr>
+                        <tr>
+                            <td>Clé de secours</td>
+                            <td>~55 € / utilisateur</td>
+                            <td>Fortement recommandé : 2 clés par compte critique.</td>
+                        </tr>
+                        <tr>
+                            <td>Intégration technique</td>
+                            <td>2 à 5 jours</td>
+                            <td>Backend WebAuthn, UI, tests bout-en-bout, politique de récupération.</td>
+                        </tr>
+                        <tr>
+                            <td>Formation et onboarding</td>
+                            <td>Faible</td>
+                            <td>Geste unique : brancher et toucher. Documentation minimaliste suffisante.</td>
+                        </tr>
+                        <tr>
+                            <td>Support et remplacement</td>
+                            <td>Variable</td>
+                            <td>Prévoir un stock tampon et une procédure de révocation rapide.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mar-card">
+            <h2>Flux technique résumé</h2>
+            <ol>
+                <li><strong>Enregistrement :</strong> le serveur génère un challenge → le navigateur le transmet à la YubiKey → la clé génère une paire RSA/EC et retourne la clé publique + attestation → le serveur vérifie et persiste (credentialId, publicKey, signCount).</li>
+                <li><strong>Authentification :</strong> le serveur génère un nouveau challenge → le navigateur l'envoie à la YubiKey → la clé signe avec sa clé privée → le serveur vérifie la signature avec la clé publique stockée et contrôle que signCount a augmenté.</li>
+            </ol>
+        </section>
+
+        <div class="mar-actions">
+            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
+            <a class="mar-link" href="{{ url_for('logout') }}">Se déconnecter</a>
+        </div>
+    </main>
+</body>
+</html>
