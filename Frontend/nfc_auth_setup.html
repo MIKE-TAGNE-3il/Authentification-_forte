@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Authentification NFC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="nfc-auth-page">
+    <div class="msa-wrapper">
+        <div class="msa-header">
+            {% if active_card %}
+                <h1>Vérifier votre carte NFC</h1>
+                <p>Une carte est associée à votre compte. Posez-la sur le lecteur pour vous authentifier.</p>
+            {% else %}
+                <h1>Enregistrer votre carte NFC</h1>
+                <p>Aucune carte n'est encore associée à votre compte. Posez votre carte pour l'enregistrer.</p>
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div id="js-status" class="messages" style="display:none;">
+            <div id="js-status-msg" class="flash info"></div>
+        </div>
+
+        <div class="msa-grid">
+
+            {% if active_card %}
+            <!-- Carte déjà enregistrée -->
+            <section class="msa-card">
+                <h2>Carte associée au compte</h2>
+                <table style="width:100%; border-collapse:collapse; margin-top:0.5rem;">
+                    <tr>
+                        <td style="padding:6px 0; color:#666;">UID</td>
+                        <td style="padding:6px 0; font-family:monospace; font-weight:bold;">{{ active_card.uid }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 0; color:#666;">Enregistrée le</td>
+                        <td style="padding:6px 0;">{{ active_card.registered_at.strftime('%d/%m/%Y à %H:%M') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 0; color:#666;">Expire le</td>
+                        <td style="padding:6px 0; font-weight:bold; color:#e07b00;">
+                            {{ active_card.expires_at.strftime('%d/%m/%Y à %H:%M') }}
+                        </td>
+                    </tr>
+                </table>
+            </section>
+
+            <section class="msa-card">
+                <h2>Vérifier la carte</h2>
+                <p>Posez la même carte sur le lecteur, puis cliquez sur le bouton.</p>
+                <div class="msa-form">
+                    <button id="btn-read" class="btn-submit" type="button">
+                        Vérifier ma carte NFC
+                    </button>
+                </div>
+                <hr style="margin:1.5rem 0; border:none; border-top:1px solid #e0e0e0;">
+                <p style="font-size:0.85rem; color:#888;">Carte perdue ou volée ?</p>
+                <form action="{{ url_for('nfc_auth_bp.nfc_auth_revoke') }}" method="POST"
+                      onsubmit="return confirm('Révoquer cette carte ? Vous devrez en enregistrer une nouvelle.')">
+                    <button type="submit"
+                            style="background:none; border:none; color:#c0392b; cursor:pointer; font-size:0.85rem; text-decoration:underline; padding:0;">
+                        Révoquer cette carte
+                    </button>
+                </form>
+            </section>
+
+            {% else %}
+            <!-- Aucune carte enregistrée -->
+            <section class="msa-card">
+                <h2>1. Préparer le matériel</h2>
+                <p>Connectez votre lecteur NFC/RFID USB. Vérifiez qu'il est reconnu dans le Gestionnaire de périphériques Windows.</p>
+            </section>
+
+            <section class="msa-card">
+                <h2>2. Enregistrer la carte</h2>
+                <p>
+                    Posez votre carte NFC sur le lecteur, puis cliquez sur le bouton.
+                    La carte sera associée à votre compte pour <strong>{{ validity_days }} jours</strong>.
+                </p>
+                <div class="msa-form">
+                    <button id="btn-read" class="btn-submit" type="button">
+                        Enregistrer ma carte NFC
+                    </button>
+                </div>
+            </section>
+            {% endif %}
+
+        </div>
+
+        <div class="msa-actions">
+            <a href="{{ url_for('choose_auth') }}">Retour au choix des méthodes</a>
+        </div>
+    </div>
+
+    <script>
+        const btnRead   = document.getElementById('btn-read');
+        const statusBox = document.getElementById('js-status');
+        const statusMsg = document.getElementById('js-status-msg');
+
+        function showStatus(msg, type) {
+            statusMsg.textContent   = msg;
+            statusMsg.className     = 'flash ' + type;
+            statusBox.style.display = 'block';
+        }
+
+        btnRead.addEventListener('click', async () => {
+            btnRead.disabled = true;
+            showStatus('Lecture de la carte en cours…', 'info');
+
+            try {
+                const resp = await fetch('/read-nfc');
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    // Carte rejetée ou erreur
+                    showStatus(data.error || 'Erreur serveur.', 'error');
+                    btnRead.disabled = false;
+                    return;
+                }
+
+                // Succès : enregistrement ou vérification
+                showStatus(data.message + ' — Redirection…', 'success');
+                setTimeout(() => { window.location.href = '/nfc-auth/report'; }, 2000);
+
+            } catch (err) {
+                showStatus('Erreur réseau : ' + err.message, 'error');
+                btnRead.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

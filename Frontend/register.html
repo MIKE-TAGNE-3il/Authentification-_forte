@@ -1,15 +1,26 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Inscription - Authentification Forte</title>
+    <title>Inscription — Authentification Forte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="register-page">
 
-<div class="container">
-    <h2>Créer un compte</h2>
+<div class="auth-card-wrapper">
+    <div class="brand-header">
+        <div class="brand-logo">🔐</div>
+        <span class="brand-name">AuthForte</span>
+        <span class="brand-tagline">Plateforme d'authentification forte — 3iL Ingénieurs</span>
+    </div>
+
+    <div class="container">
+        <h2>Créer un compte</h2>
+        <p class="subtitle">Rejoignez la plateforme de démonstration MFA.</p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -21,32 +32,29 @@
             {% endif %}
         {% endwith %}
 
-    <form action="{{ url_for('register') }}" method="POST">
-        <div class="input-group">
-            <label for="nom">Nom complet</label>
-            <input type="text" id="nom" name="nom" required>
+        <form action="{{ url_for('register') }}" method="POST">
+            <div class="input-group">
+                <label for="nom">Nom complet</label>
+                <input type="text" id="nom" name="nom" placeholder="Jean Dupont" required autocomplete="name" maxlength="200">
+            </div>
+            <div class="input-group">
+                <label for="email">Adresse e-mail</label>
+                <input type="email" id="email" name="email" placeholder="vous@exemple.com" required autocomplete="email">
+            </div>
+            <div class="input-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" placeholder="Minimum 8 caractères" required autocomplete="new-password" minlength="8">
+            </div>
+            <div class="input-group">
+                <label for="confirm">Confirmer le mot de passe</label>
+                <input type="password" id="confirm" name="confirm" placeholder="••••••••" required autocomplete="new-password" minlength="8">
+            </div>
+            <button type="submit" class="btn">Créer mon compte</button>
+        </form>
+
+        <div class="footer">
+            Déjà un compte ? <a href="{{ url_for('login') }}">Se connecter</a>
         </div>
-
-        <div class="input-group">
-            <label for="email">Adresse e-mail</label>
-            <input type="email" id="email" name="email" required>
-        </div>
-
-        <div class="input-group">
-            <label for="password">Mot de passe</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-
-        <div class="input-group">
-            <label for="confirm">Confirmer le mot de passe</label>
-            <input type="password" id="confirm" name="confirm" required>
-        </div>
-
-        <button type="submit" class="btn">S'inscrire</button>
-    </form>
-
-    <div class="footer">
-        Déjà un compte ? <a href="{{ url_for('login') }}">Se connecter</a>
     </div>
 </div>
 

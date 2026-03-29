@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Authentification réussie — AuthForte</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="microsoft-auth-report-page">
+<main class="mar-wrapper">
+
+    <div class="success-hero">
+        <div class="success-hero-icon">✓</div>
+        <h1>Identité vérifiée !</h1>
+        <p>Bienvenue, <strong>{{ session['user_name'] }}</strong>. Votre double authentification a été validée avec succès.</p>
+    </div>
+
+    <section class="mar-grid">
+        <article class="mar-card">
+            <h2>Méthode utilisée</h2>
+            <ul>
+                <li>Authentification forte multi-facteurs (MFA)</li>
+                <li>Facteur de connaissance + facteur de possession</li>
+                <li>Session chiffrée côté serveur (Flask)</li>
+            </ul>
+        </article>
+
+        <article class="mar-card">
+            <h2>Statut de sécurité</h2>
+            <ul>
+                <li>Niveau de confiance : <strong style="color:#059669">Élevé</strong></li>
+                <li>Chiffrement de session : <strong style="color:#059669">Actif</strong></li>
+                <li>Origine de la connexion : <strong style="color:#059669">Vérifiée</strong></li>
+                <li>Accès 2FA : <strong style="color:#059669">Accordé</strong></li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="mar-card" style="margin-bottom:16px;">
+        <h2>Note pédagogique</h2>
+        <p style="color:var(--text-muted); font-size:.9rem; line-height:1.7; margin:0;">
+            L'authentification forte repose sur la combinaison d'au moins deux facteurs indépendants :
+            <strong>ce que vous savez</strong> (mot de passe),
+            <strong>ce que vous possédez</strong> (téléphone, carte, clé) ou
+            <strong>ce que vous êtes</strong> (empreinte, visage).
+            Cette approche réduit drastiquement le risque de compromission même en cas de vol du mot de passe.
+        </p>
+    </section>
+
+    <div class="mar-actions">
+        <a class="mar-link" href="{{ url_for('choose_auth') }}">← Retour aux méthodes</a>
+        <a class="mar-link danger" href="{{ url_for('logout') }}">Se déconnecter</a>
+    </div>
+
+</main>
+</body>
+</html>

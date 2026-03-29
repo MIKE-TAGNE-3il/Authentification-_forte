@@ -1,81 +1,68 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Microsoft Authenticator : analyse</title>
+    <title>Microsoft Authenticator activé — AuthForte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-report-page">
-    <main class="mar-wrapper">
-        <header class="mar-header">
+<main class="mar-wrapper">
+
+    <header class="mar-header">
+        <div class="mar-header-icon">✓</div>
+        <div>
             <h1>Microsoft Authenticator activé</h1>
-            <p>Voici une synthèse utile pour une entreprise : bénéfices, limites et coûts.</p>
-        </header>
-
-        <section class="mar-grid">
-            <article class="mar-card">
-                <h2>Avantages</h2>
-                <ul>
-                    <li>Renforce fortement la sécurité des comptes avec la 2FA.</li>
-                    <li>Application gratuite et facile à déployer pour les équipes.</li>
-                    <li>Compatible avec OTP et approbation push.</li>
-                    <li>Réduction du risque de compromission par mot de passe volé.</li>
-                </ul>
-            </article>
-
-            <article class="mar-card">
-                <h2>Limites</h2>
-                <ul>
-                    <li>Dépendance au smartphone de l'utilisateur.</li>
-                    <li>Support nécessaire en cas de perte ou de changement de téléphone.</li>
-                    <li>Les codes OTP peuvent être victimes de phishing avancé.</li>
-                    <li>Expérience utilisateur plus lente qu'une connexion simple.</li>
-                </ul>
-            </article>
-        </section>
-
-        <section class="mar-card">
-            <h2>Coût pour une entreprise</h2>
-            <div class="mar-table-wrap">
-                <table class="mar-table">
-                    <thead>
-                        <tr>
-                            <th>Poste</th>
-                            <th>Estimation</th>
-                            <th>Commentaire</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Licence de l'application</td>
-                            <td>0 EUR / utilisateur</td>
-                            <td>Microsoft Authenticator est gratuit.</td>
-                        </tr>
-                        <tr>
-                            <td>Mise en place informatique</td>
-                            <td>1 à 3 jours</td>
-                            <td>Configuration des politiques MFA et tests.</td>
-                        </tr>
-                        <tr>
-                            <td>Support utilisateur</td>
-                            <td>Variable</td>
-                            <td>Principal coût opérationnel (onboarding, récupération).</td>
-                        </tr>
-                        <tr>
-                            <td>Formation interne</td>
-                            <td>Faible à modéré</td>
-                            <td>Guide court et communication sécurité.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <div class="mar-actions">
-            <a class="mar-link" href="{{ url_for('choose_auth') }}">Retour aux méthodes</a>
-            <a class="mar-link" href="{{ url_for('logout') }}">Se déconnecter</a>
+            <p>Authentification à deux facteurs configurée avec succès. Voici une synthèse pour votre entreprise.</p>
         </div>
-    </main>
+    </header>
+
+    <section class="mar-grid">
+        <article class="mar-card">
+            <h2>Avantages</h2>
+            <ul>
+                <li>Application gratuite et facile à déployer.</li>
+                <li>Compatible OTP + notification push.</li>
+                <li>Réduit le risque de compromission par mot de passe.</li>
+                <li>Fonctionne hors ligne une fois configuré.</li>
+            </ul>
+        </article>
+        <article class="mar-card">
+            <h2>Limites</h2>
+            <ul>
+                <li>Dépendance au smartphone de l'utilisateur.</li>
+                <li>Risque de perte d'accès en cas de perte du téléphone.</li>
+                <li>Les codes OTP peuvent être victimes de phishing avancé.</li>
+                <li>Expérience plus lente qu'une connexion simple.</li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="mar-card" style="margin-bottom:16px;">
+        <h2>Coût pour une entreprise</h2>
+        <div class="mar-table-wrap">
+            <table class="mar-table">
+                <thead>
+                    <tr><th>Poste</th><th>Estimation</th><th>Commentaire</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Licence application</td><td>0 € / utilisateur</td><td>Application entièrement gratuite.</td></tr>
+                    <tr><td>Mise en place IT</td><td>1 à 3 jours</td><td>Configuration des politiques MFA et tests.</td></tr>
+                    <tr><td>Support utilisateur</td><td>Variable</td><td>Principal coût : onboarding et récupération.</td></tr>
+                    <tr><td>Formation interne</td><td>Faible</td><td>Guide court + communication sécurité.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="mar-actions">
+        <a class="mar-link" href="{{ url_for('choose_auth') }}">← Retour aux méthodes</a>
+        <a class="mar-link danger" href="{{ url_for('logout') }}">Se déconnecter</a>
+    </div>
+
+</main>
 </body>
 </html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Carte Cryptonox — AuthForte</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="cryptonox-auth-page">
+<header class="setup-topbar">
+    <a href="{{ url_for('choose_auth') }}" class="back-link">← Retour</a>
+    <span class="topbar-title">💳 Carte Cryptonox FIDO2</span>
+    <span></span>
+</header>
+<div class="msa-wrapper">
+    <div class="msa-header">
+        <div class="page-eyebrow">🔐 Configuration 2FA</div>
+        <h1>Carte Cryptonox</h1>
+        <p>Enregistrez votre carte à puce FIDO2 pour une authentification sans mot de passe.</p>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}<div class="messages">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    <div id="js-status" class="messages" style="display:none;"><div id="js-status-msg" class="flash info"></div></div>
+    <div class="msa-grid">
+        <section class="msa-card">
+            <h2><span class="step-num">1</span> Préparer le matériel</h2>
+            <p>Insérez votre carte <strong>Cryptonox FIDO2</strong> dans le lecteur connecté. Vérifiez qu'il est reconnu dans le Gestionnaire de périphériques.</p>
+        </section>
+        <section class="msa-card">
+            <h2><span class="step-num">2</span> Enregistrer la carte</h2>
+            <p>Cliquez ci-dessous. Windows ouvrira une invite — sélectionnez votre carte et entrez votre PIN.</p>
+            <div class="msa-form" style="margin-top:8px;">
+                <button id="btn-register" class="btn-submit" type="button">Enregistrer ma carte</button>
+            </div>
+        </section>
+    </div>
+    <div class="msa-actions"><a href="{{ url_for('choose_auth') }}">← Choisir une autre méthode</a></div>
+</div>
+<script>
+const btnR=document.getElementById('btn-register'),sBox=document.getElementById('js-status'),sMsg=document.getElementById('js-status-msg');
+function show(m,t){sMsg.textContent=m;sMsg.className='flash '+t;sBox.style.display='block';}
+function toB64(b){const u=new Uint8Array(b);let s='';u.forEach(x=>s+=String.fromCharCode(x));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+function fromB64(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),d=atob(b),a=new Uint8Array(d.length);for(let i=0;i<d.length;i++)a[i]=d.charCodeAt(i);return a.buffer;}
+function friendly(e){if(e.name==='NotAllowedError')return 'Annulé ou expiré. Réessayez.';if(e.name==='InvalidStateError')return 'Carte déjà enregistrée.';if(e.name==='NotSupportedError')return 'WebAuthn non supporté. Utilisez Chrome/Edge.';return 'Erreur : '+e.message;}
+btnR.addEventListener('click',async()=>{btnR.disabled=true;show('Connexion au serveur...','info');try{
+    if(!window.PublicKeyCredential)throw Object.assign(new Error(),{name:'NotSupportedError'});
+    const r=await fetch('/webauthn/register/begin',{method:'POST',headers:{'Content-Type':'application/json'}});
+    if(!r.ok){const e=await r.json();throw new Error(e.error||'Erreur serveur');}
+    const o=await r.json();o.challenge=fromB64(o.challenge);o.user.id=fromB64(o.user.id);
+    if(o.excludeCredentials)o.excludeCredentials=o.excludeCredentials.map(c=>({...c,id:fromB64(c.id)}));
+    show('Carte détectée — suivez les instructions Windows...','info');
+    const cred=await navigator.credentials.create({publicKey:o});show('Validation...','info');
+    const p={id:cred.id,rawId:toB64(cred.rawId),type:cred.type,response:{clientDataJSON:toB64(cred.response.clientDataJSON),attestationObject:toB64(cred.response.attestationObject)}};
+    const c=await fetch('/webauthn/register/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    if(!c.ok){const e=await c.json();throw new Error(e.error||'Validation échouée.');}
+    show('Enregistrée ! Redirection...','success');setTimeout(()=>{window.location.href='/webauthn/report';},1500);
+}catch(e){show(friendly(e),'error');btnR.disabled=false;}});
+</script>
+</body>
+</html>

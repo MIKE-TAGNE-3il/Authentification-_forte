@@ -1,29 +1,53 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Sécurité - Authentification</title>
+    <title>Choisir ma méthode 2FA — AuthForte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="choose-auth-page">
 
+<nav class="app-nav">
+    <a href="#" class="nav-brand">
+        <div class="nav-logo-box">🔐</div>
+        AuthForte
+    </a>
+    <div class="nav-actions">
+        <a href="{{ url_for('logout') }}">Se déconnecter</a>
+    </div>
+</nav>
+
 <div class="auth-page">
     <div class="auth-header">
+        <span class="step-badge">Étape 2 sur 2</span>
         <h2>Sécurisez votre compte</h2>
-        <p>Choisissez votre méthode de double authentification (2FA).</p>
+        <p>Choisissez votre méthode de double authentification (2FA) pour renforcer l'accès à votre espace.</p>
     </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="messages" style="max-width:600px; margin:0 auto 24px;">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 
     <form action="/select-auth-method" method="POST">
         <div class="auth-options">
+
             <label class="auth-card">
                 <input type="radio" name="auth_method" value="microsoft" required>
                 <div class="icon-box"><i data-lucide="smartphone"></i></div>
                 <div class="auth-content">
                     <span class="auth-title">Microsoft Authenticator</span>
-                    <span class="auth-desc">Approbation par notification push ou code OTP.</span>
+                    <span class="auth-desc">Code OTP via l'application Microsoft.</span>
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
@@ -34,16 +58,6 @@
                 <div class="auth-content">
                     <span class="auth-title">Google Authenticator</span>
                     <span class="auth-desc">Codes temporaires générés localement.</span>
-                </div>
-                <i data-lucide="check-circle-2" class="check-badge"></i>
-            </label>
-
-            <label class="auth-card">
-                <input type="radio" name="auth_method" value="yubikey">
-                <div class="icon-box"><i data-lucide="key-round"></i></div>
-                <div class="auth-content">
-                    <span class="auth-title">Clé de sécurité</span>
-                    <span class="auth-desc">Protection matérielle physique (YubiKey).</span>
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
@@ -63,7 +77,7 @@
                 <div class="icon-box"><i data-lucide="unlock"></i></div>
                 <div class="auth-content">
                     <span class="auth-title">FreeOTP</span>
-                    <span class="auth-desc">Solution open source respectueuse de la vie privée.</span>
+                    <span class="auth-desc">Solution open source, vie privée préservée.</span>
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
@@ -77,17 +91,71 @@
                 </div>
                 <i data-lucide="check-circle-2" class="check-badge"></i>
             </label>
+
+            <label class="auth-card">
+                <input type="radio" name="auth_method" value="cryptonox">
+                <div class="icon-box"><i data-lucide="credit-card"></i></div>
+                <div class="auth-content">
+                    <span class="auth-title">Carte Cryptonox</span>
+                    <span class="auth-desc">Carte à puce FIDO2 — facteur de possession.</span>
+                </div>
+                <i data-lucide="check-circle-2" class="check-badge"></i>
+            </label>
+
+            <label class="auth-card">
+                <input type="radio" name="auth_method" value="nfc">
+                <div class="icon-box"><i data-lucide="wifi"></i></div>
+                <div class="auth-content">
+                    <span class="auth-title">Carte NFC</span>
+                    <span class="auth-desc">Badge sans contact — authentification rapide.</span>
+                </div>
+                <i data-lucide="check-circle-2" class="check-badge"></i>
+            </label>
+
+            <label class="auth-card" id="webauthn-option">
+                <input type="radio" name="auth_method" value="webauthn">
+                <div class="icon-box"><i data-lucide="fingerprint"></i></div>
+                <div class="auth-content">
+                    <span class="auth-title">Empreinte digitale</span>
+                    <span class="auth-desc">Biométrie WebAuthn — authentification locale.</span>
+                </div>
+                <i data-lucide="check-circle-2" class="check-badge"></i>
+            </label>
+
+            <label class="auth-card" style="opacity:.55; pointer-events:none;">
+                <input type="radio" name="auth_method" value="yubikey" disabled>
+                <div class="icon-box"><i data-lucide="key-round"></i></div>
+                <div class="auth-content">
+                    <span class="auth-title">YubiKey <span class="badge-soon">Bientôt</span></span>
+                    <span class="auth-desc">Clé matérielle FIDO2 — sécurité maximale.</span>
+                </div>
+            </label>
+
         </div>
 
         <div class="submit-container">
-            <button type="submit" class="btn-submit">Confirmer la méthode</button>
+            <button type="submit" class="btn-submit">Continuer avec cette méthode →</button>
         </div>
     </form>
 </div>
 
+<script src="{{ url_for('static', filename='webauthn.js') }}"></script>
 <script>
     lucide.createIcons();
-</script>
 
+    document.querySelector('form').addEventListener('submit', async function(e) {
+        const checked = document.querySelector('input[name="auth_method"]:checked');
+        if (!checked) return;
+        if (checked.value === 'webauthn') {
+            e.preventDefault();
+            if (typeof registerFingerprint === "function") {
+                try { await registerFingerprint(); }
+                catch (err) { alert("Erreur lors du scan : " + err.message); }
+            } else {
+                alert("Script WebAuthn non chargé. Vérifiez la console (F12).");
+            }
+        }
+    });
+</script>
 </body>
 </html>

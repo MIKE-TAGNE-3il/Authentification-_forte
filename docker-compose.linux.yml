@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  AuthForte — docker-compose.linux.yml  (OVERRIDE LINUX)
+#
+#  Spécificités Linux :
+#   - Le démon pcscd tourne sur l'HÔTE
+#   - La socket Unix /var/run/pcscd/pcscd.comm est montée dans le conteneur
+#   - Les règles udev (docker/udev/99-authforte.rules) doivent être installées
+#     sur l'hôte (scripts/install.sh s'en charge)
+#
+#  Usage :
+#    docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+#    OU : make start-linux
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  backend:
+    # Partage de la socket PC/SC du démon hôte vers le conteneur
+    volumes:
+      - ./Backend:/app/Backend:ro
+      - ./Frontend:/app/Frontend:ro
+      - ./static:/app/static:ro
+      - /var/run/pcscd:/var/run/pcscd:rw
+    # Accès aux périphériques USB sans mode privilégié complet
+    devices:
+      # Lecteur NFC/RFID (USB HID) — ajustez le chemin si nécessaire
+      # Listez vos périphériques avec : lsusb | grep -i nfc
+      - /dev/bus/usb:/dev/bus/usb
+    group_add:
+      # Groupe pcscd/plugdev pour accéder aux lecteurs de carte
+      - plugdev

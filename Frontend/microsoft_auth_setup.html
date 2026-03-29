@@ -1,41 +1,51 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Configuration Microsoft Authenticator</title>
+    <title>Configuration Microsoft Authenticator — AuthForte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="microsoft-auth-page">
-    <div class="msa-wrapper">
-        <div class="msa-header">
-            <h1>Configurer Microsoft Authenticator</h1>
-            <p>Suivez les étapes ci-dessous pour activer la double authentification.</p>
-        </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+<header class="setup-topbar">
+    <a href="{{ url_for('choose_auth') }}" class="back-link">← Retour</a>
+    <span class="topbar-title">📱 Microsoft Authenticator</span>
+    <span></span>
+</header>
 
-        <div class="msa-grid">
-            <section class="msa-card">
-                <h2>1. Scanner le QR code</h2>
-                <p>Ouvrez Microsoft Authenticator, appuyez sur <strong>Ajouter un compte</strong>, puis scannez ce QR code.</p>
-                <div class="msa-qr-box">
-                    <img src="{{ qr_url }}" alt="QR code Microsoft Authenticator" class="msa-qr">
-                </div>
-            </section>
-        </div>
+<div class="msa-wrapper">
+    <div class="msa-header">
+        <div class="page-eyebrow">🔐 Configuration 2FA</div>
+        <h1>Microsoft Authenticator</h1>
+        <p>Scannez le QR code avec l'application, puis entrez le code à 6 chiffres affiché.</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="messages">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="msa-grid">
+        <section class="msa-card">
+            <h2><span class="step-num">1</span> Scanner le QR code</h2>
+            <p>Ouvrez <strong>Microsoft Authenticator → Ajouter un compte</strong>, puis scannez ce QR avec l'appareil photo.</p>
+            <div class="msa-qr-box">
+                <img src="{{ qr_url }}" alt="QR code Microsoft Authenticator" class="msa-qr">
+            </div>
+        </section>
 
         <section class="msa-card">
-            <h2>2. Vérifier le code OTP</h2>
-            <p>Entrez le code à 6 chiffres affiché dans Microsoft Authenticator.</p>
+            <h2><span class="step-num">2</span> Entrer le code OTP</h2>
+            <p>L'application génère un code à 6 chiffres renouvelé toutes les <strong>30 secondes</strong>. Entrez-le ici :</p>
             <form method="POST" class="msa-form">
                 <input
                     type="text"
@@ -44,16 +54,18 @@
                     minlength="6"
                     pattern="[0-9]{6}"
                     inputmode="numeric"
-                    placeholder="Ex: 123456"
+                    placeholder="000000"
+                    autocomplete="one-time-code"
                     required
                 >
-                <button type="submit" class="btn-submit">Valider l'authentification</button>
+                <button type="submit" class="btn-submit">Valider →</button>
             </form>
         </section>
-
-        <div class="msa-actions">
-            <a href="{{ url_for('choose_auth') }}">Retour au choix des méthodes</a>
-        </div>
     </div>
+
+    <div class="msa-actions">
+        <a href="{{ url_for('choose_auth') }}">← Choisir une autre méthode</a>
+    </div>
+</div>
 </body>
 </html>
