@@ -47,16 +47,16 @@ function fromB64(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),d=atob(b),a=ne
 function friendly(e){if(e.name==='NotAllowedError')return 'Annulé ou expiré. Réessayez.';if(e.name==='InvalidStateError')return 'Carte déjà enregistrée.';if(e.name==='NotSupportedError')return 'WebAuthn non supporté. Utilisez Chrome/Edge.';return 'Erreur : '+e.message;}
 btnR.addEventListener('click',async()=>{btnR.disabled=true;show('Connexion au serveur...','info');try{
     if(!window.PublicKeyCredential)throw Object.assign(new Error(),{name:'NotSupportedError'});
-    const r=await fetch('/webauthn/register/begin',{method:'POST',headers:{'Content-Type':'application/json'}});
+    const r=await fetch('/cryptonox-auth/webauthn/register/begin',{method:'POST',headers:{'Content-Type':'application/json'}});
     if(!r.ok){const e=await r.json();throw new Error(e.error||'Erreur serveur');}
     const o=await r.json();o.challenge=fromB64(o.challenge);o.user.id=fromB64(o.user.id);
     if(o.excludeCredentials)o.excludeCredentials=o.excludeCredentials.map(c=>({...c,id:fromB64(c.id)}));
     show('Carte détectée — suivez les instructions Windows...','info');
     const cred=await navigator.credentials.create({publicKey:o});show('Validation...','info');
     const p={id:cred.id,rawId:toB64(cred.rawId),type:cred.type,response:{clientDataJSON:toB64(cred.response.clientDataJSON),attestationObject:toB64(cred.response.attestationObject)}};
-    const c=await fetch('/webauthn/register/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    const c=await fetch('/cryptonox-auth/webauthn/register/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
     if(!c.ok){const e=await c.json();throw new Error(e.error||'Validation échouée.');}
-    show('Enregistrée ! Redirection...','success');setTimeout(()=>{window.location.href='/webauthn/report';},1500);
+    show('Enregistrée ! Redirection...','success');setTimeout(()=>{window.location.href='/cryptonox-auth/webauthn/report';},1500);
 }catch(e){show(friendly(e),'error');btnR.disabled=false;}});
 </script>
 </body>

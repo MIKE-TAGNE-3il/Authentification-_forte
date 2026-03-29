@@ -142,7 +142,7 @@ def _register_card(user_id: int, uid: str) -> datetime:
 # Routes
 # ---------------------------------------------------------------------------
 
-@nfc_auth_bp.route("/nfc-auth/setup")
+@nfc_auth_bp.route("/setup")
 def nfc_auth_setup():
     """
     Page de configuration / vérification NFC.
@@ -253,7 +253,7 @@ def read_nfc():
     })
 
 
-@nfc_auth_bp.route("/nfc-auth/revoke", methods=["POST"])
+@nfc_auth_bp.route("/revoke", methods=["POST"])
 def nfc_auth_revoke():
     """
     Révoque (supprime) la carte NFC associée au compte.
@@ -279,7 +279,7 @@ def nfc_auth_revoke():
     return redirect(url_for("nfc_auth_bp.nfc_auth_setup"))
 
 
-@nfc_auth_bp.route("/nfc-auth/report")
+@nfc_auth_bp.route("/report")
 def nfc_auth_report():
     if "user_id" not in session:
         return redirect(url_for("login"))

@@ -187,7 +187,7 @@ def _load_credentials(user_id: int) -> list:
 cryptonox_auth_bp = Blueprint("cryptonox_auth_bp", __name__)
 
 
-@cryptonox_auth_bp.route("/cryptonox-auth/setup")
+@cryptonox_auth_bp.route("/setup")
 def cryptonox_auth_setup():
     if "user_id" not in session:
         return redirect(url_for("login"))

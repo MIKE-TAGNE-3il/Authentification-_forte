@@ -6,6 +6,7 @@ import os
 import bcrypt
 import logging
 
+print(f"DEBUG: DB_HOST is {os.getenv('DB_HOST')}")
 
 # --- IMPORT TOTP GÉNÉRIQUE (remplace les 4 imports redondants) ---
 try:
@@ -68,9 +69,15 @@ app = Flask(
     static_url_path="/static",
 )
 
-app.register_blueprint(cryptonox_auth_bp)
-app.register_blueprint(nfc_auth_bp)
-app.register_blueprint(email_auth_bp)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=False, # True seulement si on est en HTTPS
+)
+
+app.register_blueprint(cryptonox_auth_bp, url_prefix='/cryptonox-auth')
+app.register_blueprint(nfc_auth_bp, url_prefix='/nfc-auth')
+app.register_blueprint(email_auth_bp, url_prefix='/email-auth')
 
 # Clé secrète depuis le fichier .env
 app.secret_key = os.getenv("SECRET_KEY", "436f9c8e7a1b5d3f2a8c6e4d9b7a1c3e5f8a2d4b6c0e9f7a3c1e5d8b2a4f6c0e")
@@ -78,7 +85,7 @@ app.secret_key = os.getenv("SECRET_KEY", "436f9c8e7a1b5d3f2a8c6e4d9b7a1c3e5f8a2d
 # --- CONNEXION BASE DE DONNÉES ---
 def get_connection():
     return pymysql.connect(
-        host=os.getenv("DB_HOST", "localhost"),
+        host=os.getenv("DB_HOST", "db"),
         user=os.getenv("DB_USER", "root"),
         password=os.getenv("DB_PASSWORD", ""),
         database=os.getenv("DB_NAME", "authentification"),
@@ -88,41 +95,7 @@ def get_connection():
     )
 
 
-def init_database_schema():
-    conn = None
-    cursor = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                id INT(100) NOT NULL AUTO_INCREMENT,
-                nom VARCHAR(500) NOT NULL,
-                email VARCHAR(500) NOT NULL,
-                password VARCHAR(1000) NOT NULL,
-                createdAt DATETIME NOT NULL,
-                PRIMARY KEY (id),
-                UNIQUE KEY email (email)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-            """
-        )
-        # Corrige les anciennes bases où id n'était pas AUTO_INCREMENT
-        cursor.execute(
-            """
-            ALTER TABLE users
-            MODIFY COLUMN id INT(100) NOT NULL AUTO_INCREMENT
-            """
-        )
-        conn.commit()
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
 
-
-init_database_schema()
 init_webauthn_table()
 init_nfc_table()
 
@@ -178,6 +151,7 @@ def register():
             return redirect(url_for("login"))
 
         except Exception as e:
+            logger.error(f"Erreur inscription: {e}")
             flash(f"Erreur lors de l'inscription : {e}", "danger")
 
     return render_template("register.html")
@@ -342,7 +316,7 @@ def totp_auth_report(method: str):
 
     secret = session.get("google_totp_secret")
     if not secret:
-        secret = generate_google_totp_secret()
+        secret = generate_totp_secret()
         session["google_totp_secret"] = secret
         session["google_auth_verified"] = False
 
@@ -387,20 +361,20 @@ def authy_auth_setup():
 
     secret = session.get("authy_totp_secret")
     if not secret:
-        secret = generate_authy_totp_secret()
+        secret = generate_totp_secret()
         session["authy_totp_secret"] = secret
         session["authy_auth_verified"] = False
 
     account_name = session.get("user_name", "utilisateur")
     issuer = "AuthentificationForte"
-    otpauth_uri = build_authy_otpauth_uri(
+    otpauth_uri = build_otpauth_uri(
         secret=secret, account_name=account_name, issuer=issuer
     )
-    qr_url = build_authy_qr_code_url(otpauth_uri)
+    qr_url = build_qr_code_url(otpauth_uri)
 
     if request.method == "POST":
         otp_code = request.form.get("otp_code", "").strip()
-        if verify_authy_totp(secret=secret, user_code=otp_code):
+        if verify_totp(secret=secret, user_code=otp_code):
             session["authy_auth_verified"] = True
             flash("Authy est configure avec succes.", "success")
             return redirect(url_for("authy_auth_report"))
@@ -432,20 +406,20 @@ def freeotp_auth_setup():
 
     secret = session.get("freeotp_totp_secret")
     if not secret:
-        secret = generate_freeotp_totp_secret()
+        secret = generate_totp_secret()
         session["freeotp_totp_secret"] = secret
         session["freeotp_auth_verified"] = False
 
     account_name = session.get("user_name", "utilisateur")
     issuer = "AuthentificationForte"
-    otpauth_uri = build_freeotp_otpauth_uri(
+    otpauth_uri = build_otpauth_uri(
         secret=secret, account_name=account_name, issuer=issuer
     )
-    qr_url = build_freeotp_qr_code_url(otpauth_uri)
+    qr_url = build_qr_code_url(otpauth_uri)
 
     if request.method == "POST":
         otp_code = request.form.get("otp_code", "").strip()
-        if verify_freeotp_totp(secret=secret, user_code=otp_code):
+        if verify_totp(secret=secret, user_code=otp_code):
             session["freeotp_auth_verified"] = True
             flash("FreeOTP est configure avec succes.", "success")
             return redirect(url_for("freeotp_auth_report"))
@@ -704,4 +678,4 @@ def yubikey_report():
 # --- authentification par e-mail ------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)

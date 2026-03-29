@@ -119,7 +119,7 @@
             showStatus('Lecture de la carte en cours…', 'info');
 
             try {
-                const resp = await fetch('/read-nfc');
+                const resp = await fetch('/nfc-auth/read-nfc');
                 const data = await resp.json();
 
                 if (!resp.ok) {

@@ -17,6 +17,9 @@ from fido2.webauthn import (
     PublicKeyCredentialRpEntity,
     PublicKeyCredentialUserEntity,
     UserVerificationRequirement,
+    RegistrationResponse, 
+    AuthenticationResponse,
+    AuthenticatorAttestationResponse
 )
 
 # ---------------------------------------------------------------------------
@@ -128,15 +131,29 @@ def complete_registration(
     """
     Vérifie l'attestation. Retourne credential_id, public_key, sign_count.
     """
-    client_data = CollectedClientData(b64url_decode(client_data_json_b64))
-    att_obj     = AttestationObject(b64url_decode(attestation_object_b64))
+    client_data_bytes = b64url_decode(client_data_json_b64)
+    att_obj_bytes     = b64url_decode(attestation_object_b64)
+
+    # 1. On crée la réponse d'attestation
+    attestation_response = AuthenticatorAttestationResponse(
+        client_data=CollectedClientData(client_data_bytes),
+        attestation_object=AttestationObject(att_obj_bytes),
+    )
+
+    # 2. On crée l'objet RegistrationResponse (avec un raw_id factice ou extrait si disponible)
+    # Note: Dans ton flux JS, tu devrais aussi envoyer le "rawId" pour être 100% propre
+    registration_response = RegistrationResponse(
+        raw_id=b"", # Ou extrait de la requête si tu l'as ajouté au JSON envoyé par le JS
+        response=attestation_response,
+    )
 
     fido_state = {
-        "challenge":         state["challenge"],          # bytes
+        "challenge":         state["challenge"],
         "user_verification": state.get("user_verification", "preferred"),
     }
 
-    auth_data = _server.register_complete(fido_state, client_data, att_obj)
+    # 3. APPEL CORRIGÉ : Seulement 2 arguments (le state et la réponse)
+    auth_data = _server.register_complete(fido_state, registration_response)
 
     credential_id: bytes = auth_data.credential_data.credential_id
     public_key:    bytes = cbor.encode(dict(auth_data.credential_data.public_key))
@@ -147,7 +164,6 @@ def complete_registration(
         "public_key":    public_key,
         "sign_count":    sign_count,
     }
-
 
 # ---------------------------------------------------------------------------
 # Authentification
@@ -229,26 +245,33 @@ def complete_authentication(
         for c in credentials
     ]
 
-    credential_id = b64url_decode(credential_id_b64)
-    client_data   = CollectedClientData(b64url_decode(client_data_json_b64))
-    auth_data     = AuthenticatorData(b64url_decode(authenticator_data_b64))
-    signature     = b64url_decode(signature_b64)
+    auth_response = AuthenticationResponse(
+        raw_id=b64url_decode(credential_id_b64),
+        response={
+            "clientDataJSON": b64url_decode(client_data_json_b64),
+            "authenticatorData": b64url_decode(authenticator_data_b64),
+            "signature": b64url_decode(signature_b64),
+        }
+    )
 
     fido_state = {
-        "challenge":         state["challenge"],   # bytes
+        "challenge": state["challenge"],
         "user_verification": state.get("user_verification", "preferred"),
     }
 
     auth_result = _server.authenticate_complete(
         state=fido_state,
         credentials=fido_credentials,
-        credential_id=credential_id,
-        client_data=client_data,
-        auth_data=auth_data,
-        signature=signature,
+        response=auth_response  
     )
 
+    cred_id = getattr(auth_result, 'credential_id', None)
+    if not cred_id and hasattr(auth_result, 'credential'):
+        cred_id = auth_result.credential.credential_id
+
+    new_sign_count = getattr(auth_result, 'sign_count', getattr(auth_result, 'counter', 0))
+
     return {
-        "credential_id":  credential_id,
-        "new_sign_count": auth_result.new_sign_count,
+        "credential_id": cred_id,
+        "new_sign_count": new_sign_count,
     }

@@ -102,6 +102,7 @@ email_auth_bp = Blueprint("email_auth_bp", __name__)
 @email_auth_bp.route("/email-auth/setup", methods=["GET", "POST"])
 def email_auth_setup():
     """Identique à la logique précédente déplacée depuis app.py."""
+    print(f"DEBUG SESSION: {session.get('user_id')}")
     if "user_id" not in session:
         return redirect(url_for("login"))
 
