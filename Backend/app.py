@@ -8,7 +8,6 @@ import logging
 
 print(f"DEBUG: DB_HOST is {os.getenv('DB_HOST')}")
 
-# --- IMPORT TOTP GÉNÉRIQUE (remplace les 4 imports redondants) ---
 try:
     from totp_core import TOTP_CONFIGS, generate_totp_secret, build_otpauth_uri, build_qr_code_url, verify_totp
 except ImportError:
@@ -37,7 +36,6 @@ try:
 except ImportError:
     from Backend.mail_authenticator import email_auth_bp
 
-# --- IMPORTS WEBAUTHN (v2.7.1) ---
 from webauthn_handler import get_registration_options, verify_registration
 from webauthn.helpers import options_to_json
 
@@ -95,11 +93,41 @@ def get_connection():
     )
 
 
+def init_database_schema():
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INT(100) NOT NULL AUTO_INCREMENT,
+                nom VARCHAR(500) NOT NULL,
+                email VARCHAR(500) NOT NULL,
+                password VARCHAR(1000) NOT NULL,
+                createdAt DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY email (email)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+            """
+        )
+        cursor.execute(
+            """
+            ALTER TABLE users
+            MODIFY COLUMN id INT(100) NOT NULL AUTO_INCREMENT
+            """
+        )
+        conn.commit()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 init_webauthn_table()
 init_nfc_table()
 
-# --- ROUTES D'AUTHENTIFICATION CLASSIQUE ---
 
 @app.route("/")
 def home():
@@ -188,7 +216,6 @@ def select_auth_method():
     flash(f"Methode {selected_method} non implementee pour le moment.", "error")
     return redirect(url_for("choose_auth"))
 
-# --- BIOMÉTRIE WEBAUTHN (v2.7.1) ---
 
 @app.route("/webauthn/register/options")
 def webauthn_register_options():
@@ -239,7 +266,6 @@ def webauthn_register_verify():
         logger.exception("Échec vérification WebAuthn (user_id=%s)", session.get("user_id"))
         return {"status": "error", "message": "Échec de la vérification biométrique."}, 400
 
-# --- FIN ET DÉCONNEXION ---
 
 @app.route("/auth-success")
 def auth_success():

@@ -7,7 +7,7 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
     AttestationConveyancePreference,
     RegistrationCredential,
-    AuthenticatorAttachment  # <-- La virgule à la fin de la ligne précédente est cruciale
+    AuthenticatorAttachment
 )
 
 RP_ID = "localhost"
@@ -15,7 +15,6 @@ RP_NAME = "AuthentificationForte"
 ORIGIN = "http://localhost:5000"
 
 def get_registration_options(user_id_bytes, username):
-    # Configuration optimisée pour ta clé Kensington (CROSS_PLATFORM)
     auth_selection = AuthenticatorSelectionCriteria(
         user_verification=UserVerificationRequirement.PREFERRED,
         authenticator_attachment=AuthenticatorAttachment.CROSS_PLATFORM
